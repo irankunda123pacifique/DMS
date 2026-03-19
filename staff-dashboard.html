@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="DMS — Teacher Dashboard">
+    <title>Staff Dashboard — DMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+
+<body>
+    <div class="app-layout">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <a href="#" class="sidebar-logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 48 48" fill="none">
+                        <path d="M24 4L6 12V24C6 33.6 14.16 42.72 24 44C33.84 42.72 42 33.6 42 24V12L24 4Z"
+                            fill="url(#tg)" />
+                        <path d="M18 24H22V28H18V24ZM26 24H30V28H26V24ZM18 18H22V22H18V18ZM26 18H30V22H26V18Z"
+                            fill="white" opacity="0.9" />
+                        <defs>
+                            <linearGradient id="tg" x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#6366f1" />
+                                <stop offset="1" stop-color="#8b5cf6" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h2 id="sidebarSchoolName">DMS</h2><span>Staff Portal</span>
+                </div>
+            </a>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Overview</div>
+                <button class="nav-item active" data-page="home" onclick="navigate('home')">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
+                    </svg>
+                    My Dashboard
+                </button>
+                <button class="nav-item" data-page="students" onclick="navigate('students')">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                    </svg>
+                    Students
+                </button>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Discipline</div>
+                <button class="nav-item" data-page="scan" onclick="navigate('scan')">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M9.5 6.5v3h-3v-3h3M11 5H5v6h6V5zm-1.5 9.5v3h-3v-3h3M11 13H5v6h6v-6zm6.5-6.5v3h-3v-3h3M19 5h-6v6h6V5zm-6 8h1.5v1.5H13V13zm1.5 1.5H16V16h-1.5v-1.5zM16 13h1.5v1.5H16V13zm-3 3h1.5v1.5H13V16zm1.5 1.5H16V19h-1.5v-1.5zM16 16h1.5v1.5H16V16zm1.5-1.5H19V16h-1.5v-1.5zm0 3H19V19h-1.5v-1.5z" />
+                    </svg>
+                    Scan Student
+                </button>
+                <button class="nav-item" data-page="submit" onclick="navigate('submit')">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                    </svg>
+                    Submit Report
+                </button>
+                <button class="nav-item" data-page="history" onclick="navigate('history')">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
+                    </svg>
+                    My Reports
+                </button>
+            </div>
+
+            <div class="sidebar-bottom">
+                <div class="sidebar-user">
+                    <div class="avatar-btn" style="width:36px;height:36px;font-size:0.8rem;" id="sidebarAvatar">ST</div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.8125rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                            id="sidebarName">Staff</div>
+                        <div style="font-size:0.7rem;color:#64748b;cursor:pointer;"
+                            onclick="openModal('settingsModal')">Settings & Profile</div>
+                    </div>
+                    <button onclick="logout()" title="Logout"
+                        style="background:none;border:none;cursor:pointer;color:#64748b;padding:4px;border-radius:6px;display:flex;">
+                        <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;">
+                            <path
+                                d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <div>
+                        <h2 id="pageTitle">Staff Dashboard</h2><span id="pageSubtitle">Welcome back</span>
+                    </div>
+                </div>
+                <div class="topbar-right">
+                    <div class="avatar-btn" id="topbarAvatar" style="overflow:hidden;"
+                        onclick="openModal('settingsModal')">ST</div>
+                </div>
+            </header>
+            <main class="page-content" id="pageContent"></main>
+        </div>
+    </div>
+
+    <!-- SUBMIT MODAL -->
+    <div class="modal-overlay" id="submitModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Submit Discipline Report</h3>
+                <button class="btn-close" onclick="closeModal('submitModal')"><svg viewBox="0 0 24 24"
+                        fill="currentColor">
+                        <path
+                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                    </svg></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Report Type</label>
+                    <div class="role-tabs" style="margin-bottom:12px;">
+                        <button class="role-tab active" id="tabIndividual"
+                            onclick="toggleReportType('individual')">Individual Student</button>
+                        <button class="role-tab" id="tabClass" onclick="toggleReportType('class')">Entire Class</button>
+                    </div>
+                </div>
+
+                <div id="individualSection">
+                    <div class="form-group">
+                        <label>Student *</label>
+                        <div style="display:flex;gap:8px;margin-bottom:8px;">
+                            <input type="text" id="studentModalSearch" placeholder="Search by name..." style="flex:1;"
+                                oninput="searchInModal(this.value)">
+                            <button class="btn btn-outline" onclick="startScanInModal()" title="Scan QR Code"
+                                id="modalScanBtn">
+                                <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;">
+                                    <path
+                                        d="M9.5 6.5v3h-3v-3h3M11 5H5v6h6V5zm-1.5 9.5v3h-3v-3h3M11 13H5v6h6v-6zm6.5-6.5v3h-3v-3h3M19 5h-6v6h6V5z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="modalSearchResults"
+                            style="margin-bottom:8px;max-height:150px;overflow-y:auto;border-radius:8px;background:rgba(255,255,255,0.02);">
+                        </div>
+                        <select id="reqStudent">
+                            <option value="">Select a student...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="classSection" style="display:none;">
+                    <div class="form-group">
+                        <label>Class *</label>
+                        <select id="reqClass">
+                            <option value="">Select class...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Misconduct Type *</label>
+                    <select id="reqMistake">
+                        <option value="">Select type...</option>
+                        <option>Missing uniform</option>
+                        <option>Lateness</option>
+                        <option>Fighting</option>
+                        <option>Bullying</option>
+                        <option>Cheating in exam</option>
+                        <option>Disrespect to teacher</option>
+                        <option>Vandalism</option>
+                        <option>Using phone in class</option>
+                        <option>Skipping class</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <div id="otherMistakeWrap" class="form-group" style="display:none;">
+                    <label>Specify Misconduct *</label>
+                    <input type="text" id="otherMistake" placeholder="Describe the misconduct">
+                </div>
+                <div class="form-group">
+                    <label>Marks to Deduct *</label>
+                    <select id="reqMarks">
+                        <option value="3">3 marks — Minor</option>
+                        <option value="5">5 marks — Low</option>
+                        <option value="10" selected>10 marks — Moderate</option>
+                        <option value="15">15 marks — Serious</option>
+                        <option value="20">20 marks — Severe</option>
+                        <option value="25">25 marks — Critical</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Notes / Evidence</label>
+                    <textarea id="reqNotes" placeholder="Describe what happened in detail..." rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('submitModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitReport()">Submit for Review</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Settings & Profile</h3>
+                <button class="btn-close" onclick="closeModal('settingsModal')"><svg viewBox="0 0 24 24"
+                        fill="currentColor">
+                        <path
+                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                    </svg></button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px;">
+                    <div class="avatar-btn" id="profilePreview"
+                        style="width:100px;height:100px;font-size:2rem;margin-bottom:12px;overflow:hidden;">ST</div>
+                    <input type="file" id="profileUpload" accept="image/*" style="display:none;"
+                        onchange="handleProfileUpload(this)">
+                    <button class="btn btn-outline" onclick="document.getElementById('profileUpload').click()">Change
+                        Profile Picture</button>
+                </div>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="setStaffName" placeholder="Your name">
+                </div>
+                <div class="form-group">
+                    <label>Position</label>
+                    <input type="text" id="setStaffPosition" placeholder="Your position">
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="text" id="setStaffPhone" placeholder="Your phone">
+                </div>
+                <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border);">
+                    <h4 style="margin-bottom:12px;">Change Password</h4>
+                    <div class="form-group">
+                        <label>New Password</label>
+                        <input type="password" id="setNewPass" placeholder="Enter new password">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('settingsModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCAN IN MODAL -->
+    <div class="modal-overlay" id="modalScanOverlay" style="z-index:1100;">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <h3>Scan QR Code</h3>
+                <button class="btn-close" onclick="stopScanInModal()"><svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                    </svg></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalQrReader" style="width:100%;border-radius:12px;overflow:hidden;background:#000;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="js/db.js"></script>
+    <script src="js/staff-dashboard.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/i18n.js"></script>
+</body>
+
+</html>

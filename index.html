@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Discipline Management System - Modernizing school discipline with QR technology, structured workflows, and real-time analytics.">
+    <title>DMS — Discipline Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+
+<body class="login-page">
+    <!-- Animated background -->
+    <div class="bg-anim">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <div class="login-wrapper">
+        <!-- Branding Panel -->
+        <div class="brand-panel">
+            <div class="brand-logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M24 4L6 12V24C6 33.6 14.16 42.72 24 44C33.84 42.72 42 33.6 42 24V12L24 4Z"
+                            fill="url(#shield-grad)" />
+                        <path
+                            d="M18 24H22V28H18V24ZM26 24H30V28H26V24ZM18 18H22V22H18V18ZM26 18H30V22H26V18ZM18 30H22V34H18V30ZM26 30H30V34H26V30Z"
+                            fill="white" opacity="0.9" />
+                        <defs>
+                            <linearGradient id="shield-grad" x1="6" y1="4" x2="42" y2="44"
+                                gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#6366f1" />
+                                <stop offset="1" stop-color="#8b5cf6" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>DMS</h1>
+                    <span>Discipline Management System</span>
+                </div>
+            </div>
+
+            <div class="brand-features">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 11h18v2H3zm0-5h18v2H3zm0 10h18v2H3z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3>QR Code Identification</h3>
+                        <p>Instantly identify students by scanning their unique QR codes</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3>Approval Workflow</h3>
+                        <p>Structured review process ensures disciplinary accuracy</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3>Parent Notifications</h3>
+                        <p>Automated SMS & WhatsApp alerts keep parents informed</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3>Real-Time Analytics</h3>
+                        <p>Live dashboards and detailed monthly/annual reports</p>
+                    </div>
+                </div>
+            </div>
+
+            <p class="brand-footer">© 2026 Discipline Management System. All rights reserved.</p>
+        </div>
+
+        <!-- Login Panel -->
+        <div class="login-panel">
+            <div class="login-card">
+                <div class="login-header">
+                    <h2>Welcome Back</h2>
+                    <p>Sign in to access your dashboard</p>
+                </div>
+
+                <!-- Role Tabs -->
+                <div class="role-tabs" id="roleTabs">
+                    <button class="role-tab active" data-role="dod" id="tab-dod">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M17 11c.34 0 .67.04 1 .09V6.27L10.5 3 3 6.27v4.91c0 4.54 3.2 8.79 7.5 9.82.55-.13 1.08-.32 1.6-.55-.69-.98-1.1-2.17-1.1-3.45C11 13.24 13.24 11 17 11z" />
+                            <path
+                                d="M17 13c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 1.38c.62 0 1.12.51 1.12 1.12 0 .62-.51 1.12-1.12 1.12-.62 0-1.12-.51-1.12-1.12 0-.62.5-1.12 1.12-1.12zm0 5.37c-.93 0-1.74-.46-2.24-1.17.05-.72 1.51-1.08 2.24-1.08s2.19.36 2.24 1.08c-.5.71-1.31 1.17-2.24 1.17z" />
+                        </svg>
+                        DoD Officer
+                    </button>
+                    <button class="role-tab" data-role="teacher" id="tab-teacher">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z" />
+                        </svg>
+                        Teacher
+                    </button>
+                    <button class="role-tab" data-role="staff" id="tab-staff">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+                        </svg>
+                        Staff
+                    </button>
+                </div>
+
+                <!-- DoD Login Form -->
+                <form class="login-form active" id="dodForm">
+                    <div class="form-group">
+                        <label for="dodUsername">Username</label>
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                            </svg>
+                            <input type="text" id="dodUsername" placeholder="Enter your username" required
+                                autocomplete="username">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="dodPassword">Password</label>
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
+                            </svg>
+                            <input type="password" id="dodPassword" placeholder="Enter your password" required
+                                autocomplete="current-password">
+                            <button type="button" class="toggle-pass" onclick="togglePass('dodPassword', this)">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="dodError" class="error-msg" style="display:none"></div>
+                    <button type="submit" class="btn-login" id="dodLoginBtn">
+                        <span>Sign In as DoD Officer</span>
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                    </button>
+                    <div class="register-link">
+                        <p>New school? <a href="register.html">Register your school</a></p>
+                    </div>
+                </form>
+
+                <!-- Teacher Login Form -->
+                <form class="login-form" id="teacherForm" style="display:none">
+                    <div class="form-group">
+                        <label for="teacherUsername">Username</label>
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                            </svg>
+                            <input type="text" id="teacherUsername" placeholder="Enter your username" required
+                                autocomplete="username">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="teacherPassword">Password</label>
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
+                            </svg>
+                            <input type="password" id="teacherPassword" placeholder="Enter your password" required
+                                autocomplete="current-password">
+                            <button type="button" class="toggle-pass" onclick="togglePass('teacherPassword', this)">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="teacherError" class="error-msg" style="display:none"></div>
+                    <button type="submit" class="btn-login" id="teacherLoginBtn">
+                        <span>Sign In as Teacher</span>
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                    </button>
+                    <div class="register-link">
+                        <p>No account? <a href="teacher-register.html">Register as Teacher</a></p>
+                    </div>
+                </form>
+
+                <!-- Staff Login Form -->
+                <form class="login-form" id="staffForm" style="display:none">
+                    <div class="form-group">
+                        <label for="staffUsername">Username</label>
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                            </svg>
+                            <input type="text" id="staffUsername" placeholder="Enter your username" required
+                                autocomplete="username">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="staffPassword">Password</label>
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
+                            </svg>
+                            <input type="password" id="staffPassword" placeholder="Enter your password" required
+                                autocomplete="current-password">
+                            <button type="button" class="toggle-pass" onclick="togglePass('staffPassword', this)">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="staffError" class="error-msg" style="display:none"></div>
+                    <button type="submit" class="btn-login" id="staffLoginBtn">
+                        <span>Sign In as Staff</span>
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                    </button>
+                    <div class="register-link">
+                        <p>No account? <a href="staff-register.html">Register as Staff</a></p>
+                    </div>
+                </form>
+
+                <div class="demo-credentials">
+                    <p>🔑 Demo — DoD: <strong>admin / admin123</strong> | Teacher: <strong>teacher1 / pass123</strong> |
+                        Staff: <strong>staff1 / staffpass123</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/db.js"></script>
+    <script src="js/login.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/i18n.js"></script>
+</body>
+
+</html>

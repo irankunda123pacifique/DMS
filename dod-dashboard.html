@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="DMS — DoD Officer Dashboard">
+    <title>DoD Dashboard — DMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+
+<body>
+
+    <!-- ══════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════ -->
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <a href="#" class="sidebar-logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 48 48" fill="none">
+                        <path d="M24 4L6 12V24C6 33.6 14.16 42.72 24 44C33.84 42.72 42 33.6 42 24V12L24 4Z"
+                            fill="url(#sg)" />
+                        <path
+                            d="M18 24H22V28H18V24ZM26 24H30V28H26V24ZM18 18H22V22H18V18ZM26 18H30V22H26V18ZM18 30H22V34H18V30ZM26 30H30V34H26V30Z"
+                            fill="white" opacity="0.9" />
+                        <defs>
+                            <linearGradient id="sg" x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#6366f1" />
+                                <stop offset="1" stop-color="#8b5cf6" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h2>DMS</h2>
+                    <span>DoD Officer Portal</span>
+                </div>
+            </a>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Overview</div>
+                <button class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
+                    </svg>
+                    Dashboard
+                </button>
+                <button class="nav-item" data-page="analytics" onclick="navigate('analytics')">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
+                    </svg>
+                    Analytics
+                </button>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Management</div>
+                <button class="nav-item" data-page="classes" onclick="navigate('classes')">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z" />
+                    </svg>
+                    Classes
+                </button>
+                <button class="nav-item" data-page="students" onclick="navigate('students')">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+                    </svg>
+                    Students
+                </button>
+                <button class="nav-item" data-page="teachers" onclick="navigate('teachers')">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z" />
+                    </svg>
+                    Teachers
+                    <span class="nav-badge" id="pendingTeacherBadge" style="display:none">0</span>
+                </button>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Discipline</div>
+                <button class="nav-item" data-page="requests" onclick="navigate('requests')">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                    </svg>
+                    Requests
+                    <span class="nav-badge" id="pendingBadge" style="display:none">0</span>
+                </button>
+                <button class="nav-item" data-page="activity" onclick="navigate('activity')">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93 0 3.21-1.81 6-4.72 7.72L13 17v5h5l-1.22-1.22C19.91 19.07 22 15.76 22 12c0-5.18-3.95-9.45-9-9.95zM11 2.05C5.95 2.55 2 6.82 2 12c0 3.76 2.09 7.07 5.22 8.78L6 22h5V2.05z" />
+                    </svg>
+                    Activity Logs
+                </button>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Settings</div>
+                <button class="nav-item" data-page="settings" onclick="navigate('settings')">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+                    </svg>
+                    Settings
+                </button>
+            </div>
+
+            <div class="sidebar-bottom">
+                <div class="sidebar-user">
+                    <div class="avatar-btn" style="width:36px;height:36px;font-size:0.8rem;" id="sidebarAvatar">AD</div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.8125rem;font-weight:600;color:#f1f5f9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                            id="sidebarName">Admin</div>
+                        <div style="font-size:0.7rem;color:#64748b;">DoD Officer</div>
+                    </div>
+                    <button class="btn-icon" onclick="logout()" title="Logout"
+                        style="background:none;border:none;cursor:pointer;color:#64748b;padding:4px;border-radius:6px;display:flex;align-items:center;transition:color 0.2s;">
+                        <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;">
+                            <path
+                                d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ══════════════════════════════════════════
+       MAIN CONTENT
+  ══════════════════════════════════════════ -->
+        <div class="main-content">
+            <!-- Top Bar -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="btn-icon mobile-menu-btn" onclick="toggleSidebar()"
+                        style="display:none;background:none;border:none;cursor:pointer;color:#94a3b8;margin-right:12px;padding:4px;">
+                        <svg viewBox="0 0 24 24" fill="currentColor" style="width:24px;height:24px;">
+                            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
+                        </svg>
+                    </button>
+                    <div>
+                        <h2 id="pageTitle">Dashboard</h2>
+                        <span id="pageSubtitle">Overview of your school's discipline system</span>
+                    </div>
+                </div>
+                <div class="topbar-right">
+                    <div class="topbar-search">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                        </svg>
+                        <input type="text" id="globalSearch" placeholder="Search students, teachers…"
+                            oninput="handleGlobalSearch(this.value)">
+                    </div>
+                    <div style="position:relative;">
+                        <button class="avatar-btn" id="topbarAvatar" onclick="toggleUserMenu()">AD</button>
+                        <div id="userMenu"
+                            style="display:none;position:absolute;right:0;top:calc(100% + 8px);background:#1a1f36;border:1px solid rgba(255,255,255,0.08);border-radius:12px;width:200px;padding:8px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+                            <div
+                                style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:4px;">
+                                <div style="font-size:0.8125rem;font-weight:600;" id="menuName">Admin</div>
+                                <div style="font-size:0.75rem;color:#64748b;" id="menuSchool">School</div>
+                            </div>
+                            <button onclick="navigate('settings')"
+                                style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;border:none;background:none;color:#94a3b8;font-size:0.8125rem;cursor:pointer;text-align:left;font-family:inherit;"
+                                onmouseover="this.style.background='rgba(99,102,241,0.08)'"
+                                onmouseout="this.style.background='none'">
+                                <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;">
+                                    <path
+                                        d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58z" />
+                                </svg>
+                                Settings
+                            </button>
+                            <button onclick="logout()"
+                                style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;border:none;background:none;color:#f87171;font-size:0.8125rem;cursor:pointer;text-align:left;font-family:inherit;"
+                                onmouseover="this.style.background='rgba(239,68,68,0.08)'"
+                                onmouseout="this.style.background='none'">
+                                <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;">
+                                    <path
+                                        d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
+                                </svg>
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="page-content" id="pageContent">
+                <!-- Pages are injected here by JS -->
+                <div class="page-loader" id="pageLoader">
+                    <div class="spinner"></div>
+                    <span style="color:#64748b;font-size:0.875rem;">Loading…</span>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════ -->
+
+    <!-- Add Student Modal -->
+    <div class="modal-overlay" id="addStudentModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Add New Student</h3>
+                <button class="btn-close" onclick="closeModal('addStudentModal')"><svg viewBox="0 0 24 24"
+                        fill="currentColor">
+                        <path
+                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                    </svg></button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px;">
+                    <div class="avatar-btn" id="sProfilePreview"
+                        style="width:80px;height:80px;font-size:1.5rem;margin-bottom:12px;overflow:hidden;">ST</div>
+                    <input type="file" id="sProfileUpload" accept="image/*" style="display:none;"
+                        onchange="handleStudentPhotoUpload(this, 'sProfilePreview')">
+                    <button class="btn btn-outline btn-sm"
+                        onclick="document.getElementById('sProfileUpload').click()">Upload Photo</button>
+                </div>
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" id="sFullName" placeholder="Student's full name">
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                    <div class="form-group">
+                        <label style="display:flex;justify-content:space-between;"><span>Class *</span><a
+                                href="javascript:void(0)" onclick="openClassModal()"
+                                style="font-size:0.7rem;color:#818cf8;text-decoration:none;">+ Create New</a></label>
+                        <select id="sClass">
+                            <option value="">Select Class...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Gender *</label>
+                        <select id="sGender">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Starting Marks</label>
+                        <input type="number" id="sMarks" value="100" min="0" max="100">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Parent Name *</label>
+                    <input type="text" id="sParentName" placeholder="Parent/Guardian full name">
+                </div>
+                <div class="form-group">
+                    <label>Parent Phone *</label>
+                    <input type="tel" id="sParentPhone" placeholder="+250780000000">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('addStudentModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveStudent()">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                    </svg>
+                    Add Student
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div class="modal-overlay" id="editStudentModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Edit Student</h3>
+                <button class="btn-close" onclick="closeModal('editStudentModal')"><svg viewBox="0 0 24 24"
+                        fill="currentColor">
+                        <path
+                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                    </svg></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editStudentId">
+                <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px;">
+                    <div class="avatar-btn" id="editSProfilePreview"
+                        style="width:80px;height:80px;font-size:1.5rem;margin-bottom:12px;overflow:hidden;">ST</div>
+                    <input type="file" id="editSProfileUpload" accept="image/*" style="display:none;"
+                        onchange="handleStudentPhotoUpload(this, 'editSProfilePreview')">
+                    <button class="btn btn-outline btn-sm"
+                        onclick="document.getElementById('editSProfileUpload').click()">Change Photo</button>
+                </div>
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" id="editSFullName">
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                    <div class="form-group">
+                        <label style="display:flex;justify-content:space-between;"><span>Class *</span><a
+                                href="javascript:void(0)" onclick="openClassModal()"
+                                style="font-size:0.7rem;color:#818cf8;text-decoration:none;">+ Create New</a></label>
+                        <select id="editSClass">
+                            <option value="">Select Class...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Gender *</label>
+                        <select id="editSGender">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Marks</label>
+                        <input type="number" id="editSMarks" min="0" max="100">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Parent Name</label>
+                    <input type="text" id="editSParentName">
+                </div>
+                <div class="form-group">
+                    <label>Parent Phone</label>
+                    <input type="tel" id="editSParentPhone">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('editStudentModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="updateStudent()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Student / QR Modal -->
+    <div class="modal-overlay" id="viewStudentModal">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h3>Student Profile</h3>
+                <button class="btn-close" onclick="closeModal('viewStudentModal')"><svg viewBox="0 0 24 24"
+                        fill="currentColor">
+                        <path
+                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                    </svg></button>
+            </div>
+            <div class="modal-body" id="viewStudentBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('viewStudentModal')">Close</button>
+                <button class="btn btn-primary" onclick="printQR()">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z" />
+                    </svg>
+                    Print QR
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Request Modal -->
+    <div class="modal-overlay" id="reviewRequestModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Review Discipline Request</h3>
+                <button class="btn-close" onclick="closeModal('reviewRequestModal')"><svg viewBox="0 0 24 24"
+                        fill="currentColor">
+                        <path
+                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                    </svg></button>
+            </div>
+            <div class="modal-body" id="reviewRequestBody"></div>
+            <div class="modal-footer" id="reviewRequestFooter"></div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div class="modal-overlay" id="confirmDeleteModal">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-body" style="text-align:center;padding:32px 24px;gap:12px;">
+                <div
+                    style="width:56px;height:56px;background:rgba(239,68,68,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto;margin-bottom:16px;">
+                    <svg viewBox="0 0 24 24" fill="currentColor" style="width:28px;height:28px;color:#f87171;">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                    </svg>
+                </div>
+                <h3 style="font-size:1.125rem;font-weight:700;">Confirm Delete</h3>
+                <p style="color:#64748b;font-size:0.875rem;" id="confirmDeleteMsg">Are you sure you want to delete this
+                    item?</p>
+                <div class="form-group" style="text-align:left;margin-top:20px;">
+                    <label>Enter DoD Password to Confirm *</label>
+                    <input type="password" id="confirmDeletePwd" placeholder="Your password">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('confirmDeleteModal')">Cancel</button>
+                <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Class Modal -->
+    <div class="modal-overlay" id="addClassModal">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <h3>Create New Class</h3>
+                <button class="btn-close" onclick="closeModal('addClassModal')"><svg viewBox="0 0 24 24"
+                        fill="currentColor">
+                        <path
+                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                    </svg></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Class Name *</label>
+                    <input type="text" id="clsName" placeholder="e.g. S4A">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('addClassModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveClass()">Create Class</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/db.js"></script>
+    <!-- View Class Modal -->
+    <div class="modal-overlay" id="viewClassModal">
+        <div class="modal" style="max-width:800px;">
+            <div class="modal-header">
+                <h3>Class Details: <span id="vClassName">S4A</span></h3>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <button class="btn btn-outline btn-sm" onclick="promptRenameClass()"
+                        style="color:#6366f1;border-color:rgba(99,102,241,0.2);">Rename</button>
+                    <button class="btn btn-outline btn-sm" onclick="confirmDeleteClass()"
+                        style="color:#ef4444;border-color:rgba(239,68,68,0.2);">Delete</button>
+                    <button class="btn-close" onclick="closeModal('viewClassModal')" style="margin-left:8px;"><svg
+                            viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                        </svg></button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="stats-grid" id="classStatsGrid" style="margin-bottom:20px;">
+                    <!-- Stats injected here -->
+                </div>
+
+                <div class="card" style="margin-bottom:20px;background:rgba(255,255,255,0.02);">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                        <div class="form-group">
+                            <label>Assign Class Teacher</label>
+                            <select id="assignTeacherSelect" onchange="assignTeacherToClass()">
+                                <option value="">Select a teacher...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Bulk Mark Adjustment (for all students)</label>
+                            <div style="display:flex;gap:8px;">
+                                <input type="number" id="bulkMarkAdj" value="-5" style="width:80px;">
+                                <button class="btn btn-danger" onclick="applyBulkMarks()">Apply</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table id="classStudentsTable">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Gender</th>
+                                <th>Marks</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="classNameStudentsList"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/dod-dashboard.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/i18n.js"></script>
+</body>
+
+</html>

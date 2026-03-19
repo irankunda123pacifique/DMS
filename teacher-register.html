@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="DMS — Teacher Registration">
+    <title>Teacher Registration — DMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+
+<body class="login-page">
+    <div class="bg-anim">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <div class="login-wrapper" style="justify-content:center;align-items:center;padding:32px 16px;">
+        <div class="login-panel"
+            style="width:100%;max-width:520px;border-radius:24px;border:1px solid rgba(99,102,241,0.15);">
+            <div class="login-card" style="max-width:100%;">
+                <div style="text-align:center;margin-bottom:24px;">
+                    <div
+                        style="width:52px;height:52px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 8px 24px rgba(99,102,241,0.35);">
+                        <svg style="width:28px;height:28px;fill:white;" viewBox="0 0 24 24">
+                            <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z" />
+                        </svg>
+                    </div>
+                    <h2 style="font-size:1.5rem;font-weight:800;color:#f1f5f9;">Teacher Registration</h2>
+                    <p style="color:#64748b;font-size:0.875rem;margin-top:4px;">Create your teacher account using your
+                        school's promo code</p>
+                </div>
+
+                <form id="teacherRegForm" style="display:flex;flex-direction:column;gap:16px;">
+                    <div class="form-group">
+                        <label for="tFullName">Full Name</label>
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                            </svg>
+                            <input type="text" id="tFullName" placeholder="Your full name" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tUsername">Username</label>
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-3h4v3l-4 4v-4zm0-5.5V9h4v2h-4zm-4.04.9l-.78.78-2.12-2.12.78-.78 2.12 2.12zm13.83.78l-.78-.78 2.12-2.12.78.78-2.12 2.12z" />
+                            </svg>
+                            <input type="text" id="tUsername" placeholder="Choose a unique username" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tSubject">Subject / Department</label>
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z" />
+                            </svg>
+                            <input type="text" id="tSubject" placeholder="e.g. Mathematics, English" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tPhone">Phone Number</label>
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+                            </svg>
+                            <input type="tel" id="tPhone" placeholder="+250780000000">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tPassword">Password</label>
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
+                            </svg>
+                            <input type="password" id="tPassword" placeholder="Create a password (min 6 chars)"
+                                required>
+                            <button type="button" class="toggle-pass" onclick="togglePass('tPassword',this)">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tPromoCode">School Promo Code</label>
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" />
+                            </svg>
+                            <input type="text" id="tPromoCode" placeholder="Enter school promo code" required>
+                        </div>
+                    </div>
+
+                    <div id="tRegError" class="error-msg" style="display:none;"></div>
+
+                    <button type="submit" class="btn-login" id="tRegBtn">
+                        <span>Submit Registration</span>
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                        </svg>
+                    </button>
+
+                    <div class="register-link">
+                        <p>Already have an account? <a href="index.html">Sign In</a></p>
+                    </div>
+                </form>
+
+                <div id="successMsg"
+                    style="display:none;text-align:center;padding:24px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:12px;margin-top:16px;">
+                    <div style="font-size:2.5rem;margin-bottom:8px;">✅</div>
+                    <h3 style="color:#34d399;font-size:1.125rem;font-weight:700;margin-bottom:6px;">Registration
+                        Submitted!</h3>
+                    <p style="color:#64748b;font-size:0.875rem;margin-bottom:16px;">Your account is pending approval
+                        from your DoD Officer. You'll be notified once approved.</p>
+                    <a href="index.html" class="btn-login"
+                        style="display:inline-flex;width:auto;padding:10px 24px;">Back to Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/db.js"></script>
+    <script>
+        function togglePass(id, btn) {
+            const inp = document.getElementById(id);
+            inp.type = inp.type === 'password' ? 'text' : 'password';
+        }
+
+        document.getElementById('teacherRegForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const fullName = document.getElementById('tFullName').value.trim();
+            const username = document.getElementById('tUsername').value.trim();
+            const subject = document.getElementById('tSubject').value.trim();
+            const phone = document.getElementById('tPhone').value.trim();
+            const password = document.getElementById('tPassword').value;
+            const promoCode = document.getElementById('tPromoCode').value.trim();
+            const errEl = document.getElementById('tRegError');
+            errEl.style.display = 'none';
+
+            if (password.length < 6) {
+                errEl.textContent = 'Password must be at least 6 characters.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            const btn = document.getElementById('tRegBtn');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span>Submitting...</span>';
+
+            try {
+                const teacher = await Auth.registerTeacher({ name: fullName, username, password, subject, phone, promo_code: promoCode });
+                await DB.addLog(teacher.school_id, `Teacher "${fullName}" registered (pending approval)`, username, 'teacher');
+                document.getElementById('teacherRegForm').style.display = 'none';
+                document.getElementById('successMsg').style.display = 'block';
+            } catch (err) {
+                errEl.textContent = err.message;
+                errEl.style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        });
+    </script>
+    <script src="js/theme.js"></script>
+    <script src="js/i18n.js"></script>
+</body>
+
+</html>
