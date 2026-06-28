@@ -1,277 +1,380 @@
 /**
- * DMS — Local Storage Database
- * All data persists in the browser's localStorage
+ * DMS — REST API Database Client with In-Memory Caching
+ * Connects the frontend UI to the Express backend.
  */
 
 // UI Helper: Translate strings if _t exists
 if (typeof _t !== 'function') window._t = (s) => s;
 
-const LS_KEYS = {
-    SCHOOLS: 'dms_schools',
-    TEACHERS: 'dms_teachers',
-    STAFF: 'dms_staff',
-    STUDENTS: 'dms_students',
-    CLASSES: 'dms_classes',
-    REQUESTS: 'dms_requests',
-    LOGS: 'dms_logs'
+const Auth = {
+    SESSION_KEY: 'dms_session',
+
+    getSession() {
+        const raw = sessionStorage.getItem(this.SESSION_KEY);
+        return raw ? JSON.parse(raw) : null;
+    },
+    setSession(data) {
+        sessionStorage.setItem(this.SESSION_KEY, JSON.stringify(data));
+    },
+    clearSession() {
+        sessionStorage.removeItem(this.SESSION_KEY);
+    },
+    requireAuth(role) {
+        const session = this.getSession();
+        if (!session) {
+            window.location.href = 'index.html';
+            return null;
+        }
+        return session;
+    },
+
+    async login(role, username, password) {
+        const res = await _request(`/auth/login/${role}`, {
+            method: 'POST',
+            body: JSON.stringify({ username, password })
+        });
+        const session = {
+            role: res.role,
+            id: res.id,
+            username: res.username,
+            name: res.name || res.username,
+            schoolId: res.schoolId,
+            schoolName: res.schoolName,
+            token: res.token
+        };
+        this.setSession(session);
+        return session;
+    },
+
+    async registerSchool(data) {
+        return await _request('/auth/register/school', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+
+    async registerTeacher(data) {
+        return await _request('/auth/register/teacher', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+
+    async registerStaff(data) {
+        return await _request('/auth/register/staff', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
 };
 
-const DB = {
-    // ── Internal Helpers ──
-    _getAll(key) {
-        const raw = localStorage.getItem(key);
-        return raw ? JSON.parse(raw) : [];
-    },
-    _saveAll(key, data) {
-        localStorage.setItem(key, JSON.stringify(data));
-    },
-    _generateId(prefix = 'id') {
-        return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-    },
+async function _request(endpoint, options = {}) {
+    const session = Auth.getSession();
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+    };
+    if (session && session.token) {
+        headers['Authorization'] = `Bearer ${session.token}`;
+    }
+    const res = await fetch(`/api${endpoint}`, {
+        ...options,
+        headers
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || `Request failed with status ${res.status}`);
+    }
+    return normalizeRecord(await res.json());
+}
 
-    /**
-     * Optional: In localStorage mode, load() just ensures data exists.
-     * We'll also use this to clear cache if needed, though we query LS directly now.
-     */
+function normalizeRecord(value) {
+    if (Array.isArray(value)) {
+        return value.map(normalizeRecord);
+    }
+    if (value && typeof value === 'object') {
+        const normalized = { ...value };
+        if (normalized.id && !normalized._id) {
+            normalized._id = normalized.id;
+        }
+        return normalized;
+    }
+    return value;
+}
+
+const DB = {
+    // In-memory collections to maintain compatibility with synchronous getters in dashboards
+    schools: [],
+    students: [],
+    teachers: [],
+    staff: [],
+    classes: [],
+    requests: [],
+    logs: [],
+    _undoStack: [],
+
     async load(schoolId) {
-        // Ensure some initial data if empty
-        if (this._getAll(LS_KEYS.SCHOOLS).length === 0) {
-            this._seed();
+        if (!schoolId) return;
+        try {
+            const [students, teachers, staff, classes, requests, logs] = await Promise.all([
+                _request(`/students/${schoolId}`).catch(() => []),
+                _request(`/users/teachers/${schoolId}`).catch(() => []),
+                _request(`/users/staff/${schoolId}`).catch(() => []),
+                _request(`/classes/${schoolId}`).catch(() => []),
+                _request(`/discipline/${schoolId}`).catch(() => []),
+                _request(`/logs/${schoolId}`).catch(() => [])
+            ]);
+
+            this.students = students || [];
+            this.teachers = teachers || [];
+            this.staff = staff || [];
+            this.classes = classes || [];
+            this.requests = requests || [];
+            this.logs = logs || [];
+        } catch (err) {
+            console.error('Error loading data from backend:', err);
         }
     },
 
     // ── Schools ──
     async getSchool(id) {
-        const schools = this._getAll(LS_KEYS.SCHOOLS);
-        return schools.find(s => s._id === id || s.id === id) || null;
+        const sess = Auth.getSession();
+        if (sess && (sess.schoolId === id || sess.id === id)) {
+            return {
+                id: sess.schoolId,
+                school_name: sess.schoolName,
+                dod_username: sess.username
+            };
+        }
+        return null;
     },
     async updateSchool(id, updates) {
-        const schools = this._getAll(LS_KEYS.SCHOOLS);
-        const idx = schools.findIndex(s => s._id === id || s.id === id);
-        if (idx !== -1) {
-            schools[idx] = { ...schools[idx], ...updates };
-            this._saveAll(LS_KEYS.SCHOOLS, schools);
-            return schools[idx];
+        // No direct school patch route, return local mock or session mock
+        const sess = Auth.getSession();
+        if (sess) {
+            const updatedSess = { ...sess, schoolName: updates.school_name || sess.schoolName };
+            Auth.setSession(updatedSess);
+            return updatedSess;
         }
-        throw new Error('School not found');
+        return null;
     },
 
     // ── Students ──
     getStudents(schoolId) {
-        return this._getAll(LS_KEYS.STUDENTS).filter(s => s.school_id === schoolId);
+        return this.students;
     },
     getStudent(id) {
-        return this._getAll(LS_KEYS.STUDENTS).find(s => s._id === id || s.id === id);
+        return this.students.find(s => s.id === id || s._id === id) || null;
     },
     async createStudent(data) {
-        const students = this._getAll(LS_KEYS.STUDENTS);
-        const newStudent = {
-            ...data,
-            _id: this._generateId('student'),
-            created_at: new Date().toISOString()
-        };
-        students.push(newStudent);
-        this._saveAll(LS_KEYS.STUDENTS, students);
+        const newStudent = await _request('/students', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        this.students.push(newStudent);
         return newStudent;
     },
     async updateStudent(id, updates) {
-        const students = this._getAll(LS_KEYS.STUDENTS);
-        const idx = students.findIndex(s => s._id === id || s.id === id);
+        const updated = await _request(`/students/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(updates)
+        });
+        const idx = this.students.findIndex(s => s.id === id || s._id === id);
         if (idx !== -1) {
-            students[idx] = { ...students[idx], ...updates };
-            this._saveAll(LS_KEYS.STUDENTS, students);
-            return students[idx];
+            this.students[idx] = updated;
         }
-        return null;
+        return updated;
     },
     async deleteStudent(id) {
-        let students = this._getAll(LS_KEYS.STUDENTS);
-        students = students.filter(s => s._id !== id && s.id !== id);
-        this._saveAll(LS_KEYS.STUDENTS, students);
+        await _request(`/students/${id}`, { method: 'DELETE' });
+        this.students = this.students.filter(s => s.id !== id && s._id !== id);
     },
 
     // ── Teachers ──
     getTeachers(schoolId) {
-        return this._getAll(LS_KEYS.TEACHERS).filter(t => t.school_id === schoolId);
+        return this.teachers;
     },
     getTeacher(id) {
-        return this._getAll(LS_KEYS.TEACHERS).find(t => t._id === id || t.id === id);
+        return this.teachers.find(t => t.id === id || t._id === id) || null;
     },
     async updateTeacher(id, updates) {
-        const items = this._getAll(LS_KEYS.TEACHERS);
-        const idx = items.findIndex(t => t._id === id || t.id === id);
+        const updated = await _request(`/users/teachers/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(updates)
+        });
+        const idx = this.teachers.findIndex(t => t.id === id || t._id === id);
         if (idx !== -1) {
-            items[idx] = { ...items[idx], ...updates };
-            this._saveAll(LS_KEYS.TEACHERS, items);
-            return items[idx];
+            this.teachers[idx] = updated;
         }
-        return null;
+        return updated;
     },
     async deleteTeacher(id) {
-        let items = this._getAll(LS_KEYS.TEACHERS);
-        items = items.filter(t => t._id !== id && t.id !== id);
-        this._saveAll(LS_KEYS.TEACHERS, items);
+        await _request(`/users/teachers/${id}`, { method: 'DELETE' });
+        this.teachers = this.teachers.filter(t => t.id !== id && t._id !== id);
     },
 
     // ── Staff ──
     getStaffMembers(schoolId) {
-        return this._getAll(LS_KEYS.STAFF).filter(s => s.school_id === schoolId);
+        return this.staff;
     },
     getStaff(id) {
-        return this._getAll(LS_KEYS.STAFF).find(s => s._id === id || s.id === id);
+        return this.staff.find(s => s.id === id || s._id === id) || null;
     },
     async updateStaff(id, updates) {
-        const items = this._getAll(LS_KEYS.STAFF);
-        const idx = items.findIndex(s => s._id === id || s.id === id);
+        const updated = await _request(`/users/staff/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(updates)
+        });
+        const idx = this.staff.findIndex(s => s.id === id || s._id === id);
         if (idx !== -1) {
-            items[idx] = { ...items[idx], ...updates };
-            this._saveAll(LS_KEYS.STAFF, items);
-            return items[idx];
+            this.staff[idx] = updated;
         }
-        return null;
+        return updated;
     },
     async deleteStaff(id) {
-        let items = this._getAll(LS_KEYS.STAFF);
-        items = items.filter(s => s._id !== id && s.id !== id);
-        this._saveAll(LS_KEYS.STAFF, items);
+        await _request(`/users/staff/${id}`, { method: 'DELETE' });
+        this.staff = this.staff.filter(s => s.id !== id && s._id !== id);
     },
 
     // ── Classes ──
     getClasses(schoolId) {
-        return this._getAll(LS_KEYS.CLASSES).filter(c => c.school_id === schoolId);
+        return this.classes;
     },
     getClassByName(schoolId, name) {
-        return this.getClasses(schoolId).find(c => c.name.toLowerCase() === name.toLowerCase());
+        return this.classes.find(c => c.name.toLowerCase() === name.toLowerCase()) || null;
     },
     getClass(id) {
-        return this._getAll(LS_KEYS.CLASSES).find(c => c._id === id || c.id === id);
+        return this.classes.find(c => c.id === id || c._id === id) || null;
     },
     async createClass(data) {
-        const items = this._getAll(LS_KEYS.CLASSES);
-        const newItem = {
-            ...data,
-            _id: this._generateId('class'),
-            created_at: new Date().toISOString()
-        };
-        items.push(newItem);
-        this._saveAll(LS_KEYS.CLASSES, items);
-        return newItem;
+        const newClass = await _request('/classes', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        this.classes.push(newClass);
+        return newClass;
     },
     async updateClass(id, updates) {
-        const items = this._getAll(LS_KEYS.CLASSES);
-        const idx = items.findIndex(c => c._id === id || c.id === id);
+        const updated = await _request(`/classes/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(updates)
+        });
+        const idx = this.classes.findIndex(c => c.id === id || c._id === id);
         if (idx !== -1) {
-            items[idx] = { ...items[idx], ...updates };
-            this._saveAll(LS_KEYS.CLASSES, items);
-            return items[idx];
+            this.classes[idx] = updated;
         }
-        return null;
+        return updated;
     },
     async deleteClass(id) {
-        let items = this._getAll(LS_KEYS.CLASSES);
-        items = items.filter(c => c._id !== id && c.id !== id);
-        this._saveAll(LS_KEYS.CLASSES, items);
+        await _request(`/classes/${id}`, { method: 'DELETE' });
+        this.classes = this.classes.filter(c => c.id !== id && c._id !== id);
     },
 
     // ── Discipline Requests ──
     getRequests(schoolId) {
-        return this._getAll(LS_KEYS.REQUESTS).filter(r => r.school_id === schoolId);
+        return this.requests;
     },
     getRequest(id) {
-        return this._getAll(LS_KEYS.REQUESTS).find(r => r._id === id || r.id === id);
+        return this.requests.find(r => r.id === id || r._id === id) || null;
     },
     getRequestsByTeacher(teacherId) {
-        return this._getAll(LS_KEYS.REQUESTS).filter(r => r.teacher_id === teacherId);
+        return this.requests.filter(r => r.teacher_id === teacherId);
     },
     getRequestsByStaff(staffId) {
-        return this._getAll(LS_KEYS.REQUESTS).filter(r => r.staff_id === staffId);
+        return this.requests.filter(r => r.staff_id === staffId);
     },
     getClassTeacher(teacherId) {
-        return this._getAll(LS_KEYS.CLASSES).find(c => c.teacher_id === teacherId);
+        return this.classes.find(c => c.teacher_id === teacherId) || null;
     },
     async createRequest(data) {
-        const items = this._getAll(LS_KEYS.REQUESTS);
-        const newItem = {
-            ...data,
-            _id: this._generateId('req'),
-            date: new Date().toISOString(),
-            status: data.status || 'pending'
-        };
-        items.push(newItem);
-        this._saveAll(LS_KEYS.REQUESTS, items);
-        return newItem;
+        const newReq = await _request('/discipline', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        this.requests.push(newReq);
+        return newReq;
     },
     async updateRequest(id, updates) {
-        const items = this._getAll(LS_KEYS.REQUESTS);
-        const idx = items.findIndex(r => r._id === id || r.id === id);
+        const endpoint = (updates.status && ['approved', 'rejected'].includes(updates.status))
+            ? `/discipline/${id}/review`
+            : `/discipline/${id}`;
+        const updated = await _request(endpoint, {
+            method: 'PATCH',
+            body: JSON.stringify(updates)
+        });
+        const idx = this.requests.findIndex(r => r.id === id || r._id === id);
         if (idx !== -1) {
-            items[idx] = { ...items[idx], ...updates };
-            this._saveAll(LS_KEYS.REQUESTS, items);
-            return items[idx];
+            this.requests[idx] = updated;
         }
-        return null;
+        // If approved, refresh student score cache since marks were deducted
+        if (updates.status === 'approved') {
+            const sess = Auth.getSession();
+            if (sess && sess.schoolId) {
+                const students = await _request(`/students/${sess.schoolId}`).catch(() => []);
+                this.students = students || [];
+            }
+        }
+        return updated;
     },
     async deleteRequest(id) {
-        let items = this._getAll(LS_KEYS.REQUESTS);
-        items = items.filter(r => r._id !== id && r.id !== id);
-        this._saveAll(LS_KEYS.REQUESTS, items);
+        await _request(`/discipline/${id}`, { method: 'DELETE' });
+        this.requests = this.requests.filter(r => r.id !== id && r._id !== id);
     },
 
     // ── Logs ──
     getLogs(schoolId, limit = 0) {
-        const logs = this._getAll(LS_KEYS.LOGS).filter(l => l.school_id === schoolId);
-        const sorted = logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+        const sorted = [...this.logs].sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date));
         return limit > 0 ? sorted.slice(0, limit) : sorted;
     },
     async addLog(school_id, message, user, category) {
-        const logs = this._getAll(LS_KEYS.LOGS);
-        const newLog = {
-            _id: this._generateId('log'),
-            school_id,
-            action: message,
-            performed_by: user,
-            type: category || 'general',
-            date: new Date().toISOString()
-        };
-        logs.unshift(newLog);
-        this._saveAll(LS_KEYS.LOGS, logs);
+        const newLog = await _request('/logs', {
+            method: 'POST',
+            body: JSON.stringify({ school_id, message, user, category })
+        });
+        this.logs.unshift(newLog);
         return newLog;
     },
 
-    // ── Notifications ──
+    // ── Notifications (WhatsApp triggers via backend) ──
     async addNotification(data) {
-        // Mocking notification for local execution
-        console.log('🔔 Notifications (SMS Mock):', data);
+        try {
+            const s = this.getStudent(data.student_id);
+            if (s && s.parent_phone) {
+                await _request('/discipline/whatsapp/send', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        phoneNumber: s.parent_phone,
+                        message: data.message
+                    })
+                });
+                console.log(`✓ Triggered WhatsApp Web notification to parent of student: ${s.full_name}`);
+            }
+        } catch (err) {
+            console.error('Failed to dispatch notification:', err.message);
+        }
     },
 
     // ── Stats ──
     getStats(schoolId) {
-        const students = this.getStudents(schoolId);
-        const requests = this.getRequests(schoolId);
-        const teachers = this.getTeachers(schoolId).filter(t => t.status === 'approved');
-
-        const atRisk = students.filter(s => s.discipline_marks < 50).length;
-        const avg = students.length ? Math.round(students.reduce((a, s) => a + s.discipline_marks, 0) / students.length) : 0;
+        const stats = {
+            totalStudents: this.students.length,
+            totalTeachers: this.teachers.filter(t => t.status === 'approved').length,
+            totalRequests: this.requests.length,
+            pendingRequests: this.requests.filter(r => r.status === 'pending').length,
+            approvedRequests: this.requests.filter(r => r.status === 'approved').length,
+            rejectedRequests: this.requests.filter(r => r.status === 'rejected').length,
+            studentsAtRisk: this.students.filter(s => s.discipline_marks < 50).length,
+            avgMarks: this.students.length ? Math.round(this.students.reduce((a, s) => a + Number(s.discipline_marks || 0), 0) / this.students.length) : 0,
+            thisMonthRequests: 0
+        };
 
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const thisMonthReqs = requests.filter(r => new Date(r.date) >= startOfMonth).length;
-
-        return {
-            totalStudents: students.length,
-            totalTeachers: teachers.length,
-            totalRequests: requests.length,
-            pendingRequests: requests.filter(r => r.status === 'pending').length,
-            approvedRequests: requests.filter(r => r.status === 'approved').length,
-            rejectedRequests: requests.filter(r => r.status === 'rejected').length,
-            studentsAtRisk: atRisk,
-            avgMarks: avg,
-            thisMonthRequests: thisMonthReqs
-        };
+        stats.thisMonthRequests = this.requests.filter(r => new Date(r.date || r.timestamp) >= startOfMonth).length;
+        return stats;
     },
 
     // ── Undo System ──
-    _undoStack: [],
     pushUndo(actionName, revertFn) {
         const id = Math.random().toString(36).substr(2, 9);
         this._undoStack.push({ id, actionName, revertFn, time: Date.now() });
@@ -293,186 +396,15 @@ const DB = {
         return false;
     },
 
-    // ── Seeding & Reset ──
+    // ── Reset ──
     reset() {
-        localStorage.clear();
-        this._seed();
-    },
-
-    _seed() {
-        console.log('Seeding initial data to LocalStorage...');
-        const schoolId = 'school_1';
-
-        const schools = [{
-            _id: schoolId,
-            school_name: 'Greenfield Academy',
-            dod_username: 'admin',
-            password: '123',
-            promo_code: 'TEACHER2026',
-            created_at: new Date().toISOString()
-        }];
-
-        const t1Id = 'teacher_1';
-        const t2Id = 'teacher_2';
-        const teachers = [
-            { _id: t1Id, school_id: schoolId, name: 'Mr. John Bosco', username: 'teacher1', password: '123', subject: 'Mathematics', status: 'approved', created_at: new Date().toISOString() },
-            { _id: t2Id, school_id: schoolId, name: 'Ms. Diane Uwase', username: 'teacher2', password: '123', subject: 'English', status: 'approved', created_at: new Date().toISOString() }
-        ];
-
-        const staffId = 'staff_1';
-        const staff = [
-            { _id: staffId, school_id: schoolId, name: 'Officer Mike', username: 'staff1', password: '123', position: 'Security Chief', status: 'approved', created_at: new Date().toISOString() }
-        ];
-
-        const classes = [
-            { _id: 'class_1', school_id: schoolId, name: 'S4A', teacher_id: t1Id },
-            { _id: 'class_2', school_id: schoolId, name: 'S4B', teacher_id: t2Id }
-        ];
-
-        const students = [
-            { _id: 'student_1', school_id: schoolId, full_name: 'Alice Mutesi', class: 'S4A', gender: 'Female', parent_name: 'Mrs. Mutesi Grace', parent_phone: '+250781111001', discipline_marks: 95, created_at: new Date().toISOString() },
-            { _id: 'student_2', school_id: schoolId, full_name: 'Bob Nzeyimana', class: 'S4B', gender: 'Male', parent_name: 'Mr. Nzeyimana Jean', parent_phone: '+250781111002', discipline_marks: 40, created_at: new Date().toISOString() }
-        ];
-
-        this._saveAll(LS_KEYS.SCHOOLS, schools);
-        this._saveAll(LS_KEYS.TEACHERS, teachers);
-        this._saveAll(LS_KEYS.STAFF, staff);
-        this._saveAll(LS_KEYS.CLASSES, classes);
-        this._saveAll(LS_KEYS.STUDENTS, students);
-        this._saveAll(LS_KEYS.REQUESTS, []);
-        this._saveAll(LS_KEYS.LOGS, [
-            { _id: 'log_1', school_id: schoolId, action: 'Initial system seeding', performed_by: 'System', type: 'general', date: new Date().toISOString() }
-        ]);
+        // Clear local sessionStorage, backend contains master records
+        sessionStorage.clear();
+        window.location.href = 'index.html';
     }
 };
 
-const Auth = {
-    SESSION_KEY: 'dms_session',
-
-    getSession() {
-        const raw = sessionStorage.getItem(this.SESSION_KEY);
-        return raw ? JSON.parse(raw) : null;
-    },
-    setSession(data) {
-        sessionStorage.setItem(this.SESSION_KEY, JSON.stringify(data));
-    },
-    clearSession() {
-        sessionStorage.removeItem(this.SESSION_KEY);
-    },
-    requireAuth(role) {
-        const session = this.getSession();
-        if (!session) {
-            window.location.href = 'index.html';
-            return null;
-        }
-        // role check if needed
-        return session;
-    },
-
-    async login(role, username, password) {
-        // Simple mock login against localStorage
-        if (role === 'dod') {
-            const schools = DB._getAll(LS_KEYS.SCHOOLS);
-            const s = schools.find(item => item.dod_username === username && item.password === password);
-            if (!s) throw new Error('Invalid DoD credentials');
-            const sess = {
-                role: 'dod',
-                id: s._id,
-                username: s.dod_username,
-                schoolId: s._id,
-                schoolName: s.school_name
-            };
-            this.setSession(sess);
-            return sess;
-        } else if (role === 'teacher') {
-            const items = DB._getAll(LS_KEYS.TEACHERS);
-            const u = items.find(item => item.username === username && item.password === password);
-            if (!u) throw new Error('Invalid teacher credentials');
-            if (u.status !== 'approved') throw new Error('Account pending approval');
-            const school = await DB.getSchool(u.school_id);
-            const sess = {
-                role: 'teacher',
-                id: u._id,
-                username: u.username,
-                schoolId: u.school_id,
-                schoolName: school ? school.school_name : 'DMS'
-            };
-            this.setSession(sess);
-            return sess;
-        } else if (role === 'staff') {
-            const items = DB._getAll(LS_KEYS.STAFF);
-            const u = items.find(item => item.username === username && item.password === password);
-            if (!u) throw new Error('Invalid staff credentials');
-            if (u.status !== 'approved') throw new Error('Account pending approval');
-            const school = await DB.getSchool(u.school_id);
-            const sess = {
-                role: 'staff',
-                id: u._id,
-                username: u.username,
-                schoolId: u.school_id,
-                schoolName: school ? school.school_name : 'DMS'
-            };
-            this.setSession(sess);
-            return sess;
-        }
-        throw new Error('Unsupported role');
-    },
-
-    async registerSchool(data) {
-        const schools = DB._getAll(LS_KEYS.SCHOOLS);
-        if (schools.some(s => s.dod_username === data.dod_username)) throw new Error('Username already exists');
-        const newSchool = {
-            ...data,
-            _id: DB._generateId('school'),
-            created_at: new Date().toISOString()
-        };
-        schools.push(newSchool);
-        DB._saveAll(LS_KEYS.SCHOOLS, schools);
-        return newSchool;
-    },
-
-    async registerTeacher(data) {
-        const schools = DB._getAll(LS_KEYS.SCHOOLS);
-        const school = schools.find(s => s.promo_code === data.promo_code);
-        if (!school) throw new Error('Invalid registration code');
-
-        const items = DB._getAll(LS_KEYS.TEACHERS);
-        if (items.some(u => u.username === data.username)) throw new Error('Username already exists');
-
-        const newUser = {
-            ...data,
-            _id: DB._generateId('teacher'),
-            school_id: school._id,
-            status: 'pending',
-            created_at: new Date().toISOString()
-        };
-        items.push(newUser);
-        DB._saveAll(LS_KEYS.TEACHERS, items);
-        return newUser;
-    },
-
-    async registerStaff(data) {
-        const schools = DB._getAll(LS_KEYS.SCHOOLS);
-        const school = schools.find(s => s.promo_code === data.promo_code);
-        if (!school) throw new Error('Invalid registration code');
-
-        const items = DB._getAll(LS_KEYS.STAFF);
-        if (items.some(u => u.username === data.username)) throw new Error('Username already exists');
-
-        const newUser = {
-            ...data,
-            _id: DB._generateId('staff'),
-            school_id: school._id,
-            status: 'pending',
-            created_at: new Date().toISOString()
-        };
-        items.push(newUser);
-        DB._saveAll(LS_KEYS.STAFF, items);
-        return newUser;
-    }
-};
-
-// ── Image Viewer & Utilities (Unchanged Logic, just clean export) ──
+// ── Image Viewer & Utilities ───────────────────────────────────────
 let currentZoom = 1;
 function showImageZoom(src) {
     if (!src) return;
@@ -654,5 +586,10 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Run load to ensure seeding on first visit
-DB.load();
+// Load the session automatically on page load to initialize DB cache
+(async () => {
+    const session = Auth.getSession();
+    if (session && session.schoolId) {
+        await DB.load(session.schoolId);
+    }
+})();

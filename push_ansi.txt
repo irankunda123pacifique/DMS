@@ -1,0 +1,18 @@
+branch 'master' set up to track 'origin/master'.
+git : To https://github.com/i
+rankunda123pacifique/DMS.git
+At line:1 char:1
++ git push -u origin master 
+> push.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (To http  
+  s://gith...cifique/DMS.g   
+ it:String) [], RemoteExc    
+eption
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+ * [new branch]      master 
+-> master

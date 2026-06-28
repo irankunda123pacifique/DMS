@@ -39,8 +39,8 @@ async function handleLogin(role, usernameId, passwordId, errorId, btnId, redirec
     const originalBtnHTML = btn.innerHTML;
 
     errEl.style.display = 'none';
-    btn.classList.add('loading');
-    btn.innerHTML = `<span>Signing in...</span><div style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.6s linear infinite"></div>`;
+    btn.disabled = true;
+    btn.innerHTML = `<span>Signing in...</span>`;
 
     try {
         const session = await Auth.login(role, username, password);
@@ -49,6 +49,7 @@ async function handleLogin(role, usernameId, passwordId, errorId, btnId, redirec
     } catch (err) {
         errEl.textContent = err.message || 'Invalid username or password.';
         errEl.style.display = 'block';
+        btn.disabled = false;
         btn.classList.remove('loading');
         btn.innerHTML = originalBtnHTML;
     }

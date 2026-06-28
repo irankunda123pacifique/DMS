@@ -59,20 +59,11 @@ function navigate(page) {
   updateBadges();
   const content = document.getElementById('pageContent');
   content.innerHTML = '';
-  const loader = document.createElement('div');
-  loader.className = 'page-loader';
-  loader.innerHTML = '<div class="spinner"></div>';
-  loader.style.position = 'relative';
-  loader.style.minHeight = '200px';
-  content.appendChild(loader);
-  setTimeout(() => {
-    content.innerHTML = '';
-    const pages = { dashboard: renderDashboard, classes: renderClasses, students: renderStudents, teachers: renderTeachers, requests: renderRequests, analytics: renderAnalytics, activity: renderActivity, settings: renderSettings };
-    if (pages[page]) {
-      pages[page]();
-      applyTranslations();
-    }
-  }, 150);
+  const pages = { dashboard: renderDashboard, classes: renderClasses, students: renderStudents, teachers: renderTeachers, requests: renderRequests, analytics: renderAnalytics, activity: renderActivity, settings: renderSettings };
+  if (pages[page]) {
+    pages[page]();
+    applyTranslations();
+  }
 }
 
 function updateBadges() {
@@ -227,14 +218,21 @@ function renderClasses() {
 
 function openClassModal() {
   document.getElementById('clsName').value = '';
+  const teachers = DB.getTeachers(schoolId).filter(t => t.status === 'approved');
+  const tSel = document.getElementById('newClassTeacher');
+  if (tSel) {
+    tSel.innerHTML = '<option value="">Select a teacher...</option>' + 
+      teachers.map(t => `<option value="${t._id || t.id}">${t.name}</option>`).join('');
+  }
   openModal('addClassModal');
 }
 
 function saveClass() {
   const name = document.getElementById('clsName').value.trim();
+  const tSel = document.getElementById('newClassTeacher');
+  const teacherId = tSel && tSel.value ? tSel.value : null;
   if (!name) return;
-  if (DB.getClassByName(schoolId, name)) { showToast('Class already exists', 'warning'); return; }
-  const newCls = DB.createClass({ school_id: schoolId, name });
+  const newCls = DB.createClass({ school_id: schoolId, name, teacher_id: teacherId });
 
   DB.pushUndo(`Class "${name}" created`, () => {
     DB.deleteClass(newCls.id);
@@ -773,22 +771,14 @@ async function approveRequest(id) {
   const r = DB.getRequest(id);
   if (r.target_type === 'class') {
     const students = DB.getStudents(schoolId).filter(s => s.class === r.class_name);
-    for (const s of students) {
-      const newMarks = Math.max(0, s.discipline_marks - r.marks_removed);
-      await DB.updateStudent(s._id, { discipline_marks: newMarks });
-      await DB.addNotification({ school_id: schoolId, type: 'sms', message: `Dear Parent, class-wide discipline deduction for ${r.class_name}: child ${s.full_name} -${r.marks_removed} marks for: ${r.mistake}. Current: ${newMarks}/100.`, student_id: s._id });
-    }
     await DB.updateRequest(id, { status: 'approved', reviewed_by: session.username, reviewed_at: new Date().toISOString() });
     await DB.addLog(schoolId, `CLASS Request APPROVED: "${r.mistake}" for class ${r.class_name} — -${r.marks_removed} marks each`, session.username, 'approval');
     showToast(`Approved for class ${r.class_name}. ${students.length} students updated.`, 'success');
   } else {
     const s = DB.getStudent(r.student_id);
     if (!s) return;
-    const newMarks = Math.max(0, s.discipline_marks - r.marks_removed);
-    await DB.updateStudent(s._id, { discipline_marks: newMarks });
     await DB.updateRequest(id, { status: 'approved', reviewed_by: session.username, reviewed_at: new Date().toISOString() });
     await DB.addLog(schoolId, `Request APPROVED: "${r.mistake}" for ${s.full_name} — -${r.marks_removed} marks`, session.username, 'approval');
-    await DB.addNotification({ school_id: schoolId, type: 'sms', message: `Dear ${s.parent_name}, your child ${s.full_name} received a discipline deduction of ${r.marks_removed} marks for: ${r.mistake}. Current marks: ${newMarks}/100.`, student_id: s._id });
     showToast('Request approved & parent notified!', 'success');
   }
   updateBadges();
@@ -933,6 +923,27 @@ function renderSettings() {
       <div class="form-group" style="margin-top:12px;"><label>Confirm Password</label><input type="password" id="confirmPwd" placeholder="Confirm new password"></div>
       <div style="margin-top:16px;"><button class="btn btn-primary" onclick="changePassword()">Update Password</button></div>
     </div>
+    <div class="card settings-section" id="waSection">
+      <h3>📱 WhatsApp Notifications</h3>
+      <p style="font-size:0.875rem;color:#64748b;margin-bottom:16px;">Link your WhatsApp using your phone number. Enter your number, get a pairing code, then enter it in WhatsApp → Linked Devices.</p>
+      <div id="waStatus" style="margin-bottom:16px;"><span style="color:#64748b;">Checking…</span></div>
+
+      <div id="waPairSection">
+        <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+          <input id="waPhoneInput" type="tel" placeholder="e.g. +250781234567" style="max-width:220px;">
+          <button class="btn btn-primary" onclick="waRequestCode()">Get Pairing Code</button>
+        </div>
+        <div id="waPairingCode" style="display:none;margin-bottom:12px;">
+          <p style="font-size:0.875rem;color:#94a3b8;margin-bottom:6px;">Enter this code in WhatsApp → Linked Devices → Link with phone number:</p>
+          <div id="waCodeDisplay" style="font-size:2rem;font-weight:900;letter-spacing:0.2em;color:#6366f1;background:rgba(99,102,241,0.1);padding:16px 24px;border-radius:12px;display:inline-block;"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn btn-danger" id="waDisconnectBtn" onclick="waDisconnect()" style="display:none;">Disconnect</button>
+        <button class="btn btn-outline" onclick="waSendTest()">Send Test Message</button>
+      </div>
+    </div>
     <div class="card settings-section">
       <h3 style="color:#f87171;">Danger Zone</h3>
       <div class="settings-row">
@@ -1059,3 +1070,163 @@ async function confirmDelete(type, id, name) {
 
 // ── START ──────────────────────────────────────────────────────────
 // initDashboard() called at top of file
+
+// ── WHATSAPP ────────────────────────────────────────────────────────
+let waPolling = null;
+
+async function waLoadStatus() {
+  try {
+    const res = await fetch('/api/whatsapp/status');
+    const data = await res.json();
+    const statusEl = document.getElementById('waStatus');
+    const qrEl = document.getElementById('waQR');
+    const qrImg = document.getElementById('waQRImg');
+    const connectBtn = document.getElementById('waConnectBtn');
+    const disconnectBtn = document.getElementById('waDisconnectBtn');
+    if (!statusEl) return;
+
+    if (data.status === 'ready') {
+      statusEl.innerHTML = '<span style="color:#10b981;font-weight:700;">✅ WhatsApp Connected & Ready</span>';
+      qrEl.style.display = 'none';
+      connectBtn.style.display = 'none';
+      disconnectBtn.style.display = 'inline-flex';
+      clearInterval(waPolling);
+    } else if (data.status === 'qr') {
+      statusEl.innerHTML = '<span style="color:#f59e0b;font-weight:700;">📱 Scan QR Code to connect</span>';
+      qrEl.style.display = 'block';
+      qrImg.src = data.qr;
+      connectBtn.style.display = 'none';
+      disconnectBtn.style.display = 'none';
+    } else if (data.status === 'authenticated') {
+      statusEl.innerHTML = '<span style="color:#6366f1;font-weight:700;">🔐 Authenticated, loading…</span>';
+    } else {
+      statusEl.innerHTML = '<span style="color:#ef4444;font-weight:700;">❌ Not Connected</span>';
+      qrEl.style.display = 'none';
+      connectBtn.style.display = 'inline-flex';
+      disconnectBtn.style.display = 'none';
+    }
+  } catch (e) {}
+}
+
+async function waConnect() {
+  await fetch('/api/whatsapp/connect', { method: 'POST' });
+  showToast('Connecting WhatsApp…', 'info');
+  waLoadStatus();
+  clearInterval(waPolling);
+  waPolling = setInterval(waLoadStatus, 3000);
+}
+
+async function waDisconnect() {
+  await fetch('/api/whatsapp/disconnect', { method: 'POST' });
+  showToast('WhatsApp disconnected', 'warning');
+  clearInterval(waPolling);
+  waLoadStatus();
+}
+
+async function waSendTest() {
+  const phone = prompt('Enter phone number to test (e.g. +250781234567):');
+  if (!phone) return;
+  const res = await fetch('/api/whatsapp/test', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, message: 'Hello from DMS! WhatsApp notifications are working ✅' })
+  });
+  const data = await res.json();
+  showToast(data.success ? 'Test message sent!' : 'Failed: ' + data.message, data.success ? 'success' : 'error');
+}
+
+// Auto-load WhatsApp status when settings page opens
+const _origRenderSettings = renderSettings;
+renderSettings = function () {
+  _origRenderSettings();
+  setTimeout(() => {
+    waLoadStatus();
+    clearInterval(waPolling);
+    waPolling = setInterval(waLoadStatus, 5000);
+  }, 100);
+};
+
+// ── WHATSAPP ────────────────────────────────────────────────────────
+let waPolling = null;
+
+async function waLoadStatus() {
+  try {
+    const res = await fetch('/api/whatsapp/status');
+    const data = await res.json();
+    const statusEl = document.getElementById('waStatus');
+    const pairSection = document.getElementById('waPairSection');
+    const disconnectBtn = document.getElementById('waDisconnectBtn');
+    if (!statusEl) return;
+
+    if (data.status === 'ready') {
+      statusEl.innerHTML = '<span style="color:#10b981;font-weight:700;">✅ WhatsApp Connected & Ready</span>';
+      if (pairSection) pairSection.style.display = 'none';
+      if (disconnectBtn) disconnectBtn.style.display = 'inline-flex';
+      clearInterval(waPolling);
+    } else if (data.status === 'pairing') {
+      statusEl.innerHTML = '<span style="color:#f59e0b;font-weight:700;">⏳ Waiting for you to enter the code in WhatsApp…</span>';
+      if (data.pairingCode) {
+        document.getElementById('waPairingCode').style.display = 'block';
+        document.getElementById('waCodeDisplay').textContent = data.pairingCode;
+      }
+    } else if (data.status === 'authenticated') {
+      statusEl.innerHTML = '<span style="color:#6366f1;font-weight:700;">🔐 Authenticated, loading…</span>';
+    } else {
+      statusEl.innerHTML = '<span style="color:#ef4444;font-weight:700;">❌ Not Connected</span>';
+      if (pairSection) pairSection.style.display = 'block';
+      if (disconnectBtn) disconnectBtn.style.display = 'none';
+    }
+  } catch (e) {}
+}
+
+async function waRequestCode() {
+  const phone = document.getElementById('waPhoneInput').value.trim();
+  if (!phone) { showToast('Enter your phone number first', 'warning'); return; }
+  showToast('Requesting pairing code…', 'info');
+  try {
+    const res = await fetch('/api/whatsapp/pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('waPairingCode').style.display = 'block';
+      document.getElementById('waCodeDisplay').textContent = data.code;
+      showToast('Go to WhatsApp → Linked Devices → Link with phone number', 'success', 8000);
+      clearInterval(waPolling);
+      waPolling = setInterval(waLoadStatus, 3000);
+    } else {
+      showToast('Failed: ' + data.message, 'error');
+    }
+  } catch (e) { showToast('Server error', 'error'); }
+}
+
+async function waDisconnect() {
+  await fetch('/api/whatsapp/disconnect', { method: 'POST' });
+  showToast('WhatsApp disconnected', 'warning');
+  clearInterval(waPolling);
+  waLoadStatus();
+}
+
+async function waSendTest() {
+  const phone = prompt('Enter phone number to test (e.g. +250781234567):');
+  if (!phone) return;
+  const res = await fetch('/api/whatsapp/test', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, message: 'Hello from DMS! WhatsApp notifications are working ✅' })
+  });
+  const data = await res.json();
+  showToast(data.success ? 'Test message sent!' : 'Failed: ' + data.message, data.success ? 'success' : 'error');
+}
+
+const _origRenderSettings = renderSettings;
+renderSettings = function () {
+  _origRenderSettings();
+  setTimeout(() => {
+    waLoadStatus();
+    clearInterval(waPolling);
+    waPolling = setInterval(waLoadStatus, 5000);
+  }, 100);
+};

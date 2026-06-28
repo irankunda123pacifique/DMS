@@ -156,13 +156,11 @@ function navigate(page) {
   document.getElementById('pageSubtitle').textContent = `Welcome, ${teacher ? teacher.name : ''}`;
   const pc = document.getElementById('pageContent');
   pc.innerHTML = '';
-  setTimeout(() => {
-    const pages = { home: renderHome, scan: renderScan, submit: renderSubmitPage, history: renderHistory };
-    if (pages[page]) {
-      pages[page]();
-      applyTranslations();
-    }
-  }, 100);
+  const pages = { home: renderHome, scan: renderScan, submit: renderSubmitPage, history: renderHistory };
+  if (pages[page]) {
+    pages[page]();
+    applyTranslations();
+  }
 }
 
 // ── HOME PAGE ─────────────────────────────────────────────────────

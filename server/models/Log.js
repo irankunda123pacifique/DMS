@@ -1,12 +1,41 @@
-const mongoose = require('mongoose');
+const getLogsBySchool = async (db, school_id) => {
+    try {
+        const snapshot = await db.collection('logs').where('school_id', '==', school_id).get();
+        const logs = [];
+        snapshot.forEach(doc => {
+            logs.push({ id: doc.id, ...doc.data() });
+        });
+        // Sort in memory to avoid Firestore composite index requirement
+        logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        return { data: logs, error: null };
+    } catch (error) { return { data: null, error }; }
+};
 
-const logSchema = new mongoose.Schema({
-    school_id: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: true },
-    message: { type: String, required: true },
-    user: { type: String, required: true },
-    category: { type: String, enum: ['auth', 'student', 'teacher', 'class', 'discipline', 'staff'], required: true },
-    action_type: { type: String }, // Optional specificity
-    timestamp: { type: Date, default: Date.now }
-});
+const createLog = async (db, { school_id, message, user, category, action_type, timestamp }) => {
+    try {
+        const docRef = await db.collection('logs').add({
+            school_id,
+            message,
+            user,
+            category,
+            action_type: action_type || null,
+            timestamp: timestamp || new Date().toISOString()
+        });
+        const doc = await docRef.get();
+        return { data: { id: doc.id, ...doc.data() }, error: null };
+    } catch (error) { return { data: null, error }; }
+};
 
-module.exports = mongoose.model('Log', logSchema);
+const deleteLogs = async (db, school_id) => {
+    try {
+        const snapshot = await db.collection('logs').where('school_id', '==', school_id).get();
+        const batch = db.batch();
+        snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+        return { error: null };
+    } catch (error) { return { error }; }
+};
+
+module.exports = { getLogsBySchool, createLog, deleteLogs };
