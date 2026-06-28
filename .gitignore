@@ -1,47 +1,6 @@
 node_modules/
 .env
-.env.local
-.env.*.local
 .DS_Store
 *.log
-logs/
-tmp/
-temp/
-
-# IDE files
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
-*.swp
-*.swo
-*~
-
-# Database backups
-*.sql
-*.sql.gz
-backups/
-
-# Build output
-dist/
-build/
-
-# OS files
-Thumbs.db
-
-# PM2
-.pm2/
-
-# Testing
-coverage/
-.nyc_output
-
-# Docker
-docker-compose.override.yml
-
-# Keys and certificates
-*.key
-*.pem
-private/
-secrets/
-
+server/.wwebjs_auth/
+server/.wwebjs_cache/
