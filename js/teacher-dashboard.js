@@ -8,23 +8,31 @@ let teacher = null;
 // ── Initialization ───────────────────────────────────────────────
 async function initDashboard() {
   await DB.load(schoolId);
-  teacher = DB.getTeacher(session.id);
-  if (!teacher) {
-    showToast('Teacher record not found.', 'error');
-    return;
-  }
+
+  // Try to find the teacher by id — fall back to username match so the
+  // dashboard never stays blank even if the id type differs.
+  teacher = DB.getTeacher(session.id)
+    || DB.teachers.find(t => String(t.id) === String(session.id)
+                          || String(t._id) === String(session.id)
+                          || t.username === session.username)
+    || null;
 
   const school = await DB.getSchool(schoolId);
   document.getElementById('sidebarSchoolName').textContent = school ? school.school_name : 'DMS';
-  document.getElementById('sidebarAvatar').innerHTML = renderAvatar(teacher, 40);
-  document.getElementById('topbarAvatar').innerHTML = renderAvatar(teacher, 36);
-  document.getElementById('sidebarName').textContent = teacher.name;
 
-  // Populate settings fields
-  document.getElementById('setTeacherName').value = teacher.name;
-  document.getElementById('setTeacherSubject').value = teacher.subject || '';
-  document.getElementById('setTeacherPhone').value = teacher.phone || '';
-  document.getElementById('profilePreview').innerHTML = renderAvatar(teacher, 100);
+  if (teacher) {
+    document.getElementById('sidebarAvatar').innerHTML = renderAvatar(teacher, 40);
+    document.getElementById('topbarAvatar').innerHTML = renderAvatar(teacher, 36);
+    document.getElementById('sidebarName').textContent = teacher.name;
+    document.getElementById('setTeacherName').value = teacher.name;
+    document.getElementById('setTeacherSubject').value = teacher.subject || '';
+    document.getElementById('setTeacherPhone').value = teacher.phone || '';
+    document.getElementById('profilePreview').innerHTML = renderAvatar(teacher, 100);
+  } else {
+    // Teacher record missing — still show the dashboard with session data
+    document.getElementById('sidebarName').textContent = session.username || 'Teacher';
+    showToast('Profile data not found. Contact admin.', 'warning');
+  }
 
   navigate('home');
 }
@@ -395,4 +403,49 @@ async function cancelMyReport(id) {
   else if (currentPage === 'history') renderHistory();
 }
 
-function renderSubmitPage() { navigate('submit'); } // Placeholder for navigation consistency
+// ── SUBMIT PAGE (nav item) ────────────────────────────────────────
+function renderSubmitPage() {
+  // Populate students then open the submit modal
+  populateStudentSelect();
+  openModal('submitModal');
+}
+
+function openSubmitModal() {
+  populateStudentSelect();
+  openModal('submitModal');
+}
+
+// ── HISTORY PAGE ──────────────────────────────────────────────────
+function renderHistory() {
+  const myRequests = DB.getRequestsByTeacher(session.id);
+  myRequests.sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
+
+  document.getElementById('pageContent').innerHTML = `<div class="fade-in">
+    <div class="section-header"><div><h2>My Reports</h2><p>${myRequests.length} submissions total</p></div></div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      ${myRequests.length === 0
+        ? '<div class="empty-state"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6z"/></svg><h3>No reports yet</h3><p>Submit a discipline report to see it here.</p></div>'
+        : myRequests.map(r => {
+            const s = DB.getStudent(r.student_id);
+            return `<div class="request-card ${r.status}">
+              <div class="request-card-header">
+                <div>
+                  <div class="request-mistake">${r.mistake}</div>
+                  <div class="request-meta">
+                    <span>👤 ${r.target_type === 'class' ? 'Class: ' + r.class_name : (s ? s.full_name : 'Unknown Student')}</span>
+                    <span>·</span><span>📅 ${formatDate(r.date || r.createdAt)}</span>
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <span class="badge badge-danger">-${r.marks_removed} marks</span>
+                  ${getStatusBadge(r.status)}
+                  ${r.status === 'pending' ? `<button class="btn btn-outline btn-sm" style="color:#ef4444;border-color:rgba(239,68,68,0.2);" onclick="cancelMyReport('${r._id || r.id}')">Cancel</button>` : ''}
+                </div>
+              </div>
+              ${r.notes ? `<div class="request-notes">${r.notes}</div>` : ''}
+            </div>`;
+          }).join('')
+      }
+    </div>
+  </div>`;
+}

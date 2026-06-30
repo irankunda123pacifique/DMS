@@ -304,6 +304,7 @@ function renderStudentListOnly() {
       <td><div style="display:flex;gap:6px;">
         <button class="btn btn-outline btn-sm" onclick="viewStudent('${s._id}')">QR</button>
         <button class="btn btn-outline btn-sm" onclick="editStudent('${s._id}')">Edit</button>
+        <button class="btn btn-warning btn-sm" onclick="openDeductModal('${s._id}','${s.full_name.replace(/'/g,"&#39;")}')">-Marks</button>
         <button class="btn btn-danger btn-sm" onclick="confirmDelete('student','${s._id}','${s.full_name}')">Delete</button>
       </div></td></tr>`).join('')}
     </tbody></table></div>`;
@@ -732,10 +733,10 @@ function renderRequestList() {
       </div>
       ${r.notes ? `<div class="request-notes">${r.notes}</div>` : ''}
       ${r.status === 'pending' ? `<div class="request-actions">
-        <button class="btn btn-success btn-sm" onclick="approveRequest('${r._id}')">✓ Approve</button>
-        <button class="btn btn-danger btn-sm" onclick="rejectRequest('${r._id}')">✕ Reject</button>
-        <button class="btn btn-outline btn-sm" onclick="openReview('${r._id}')">Details</button>
-      </div>` : `<div style="font-size:0.75rem;color:#64748b;margin-top:6px;">Reviewed by ${r.reviewed_by || '—'} on ${formatDate(r.reviewed_at)}</div>`}
+        <button class="btn btn-success btn-sm" onclick="approveRequest('${r._id || r.id}')">✓ Approve</button>
+        <button class="btn btn-danger btn-sm" onclick="rejectRequest('${r._id || r.id}')">✕ Reject</button>
+        <button class="btn btn-outline btn-sm" onclick="openReview('${r._id || r.id}')">Details</button>
+      </div>` : `<div style="font-size:0.75rem;color:#64748b;margin-top:6px;">Reviewed on ${formatDate(r.reviewed_at || r.date)}</div>`}
     </div>`;
   }).join('')}</div>`;
 }
@@ -759,8 +760,8 @@ function openReview(id) {
   const footer = document.getElementById('reviewRequestFooter');
   if (r.status === 'pending') {
     footer.innerHTML = `<button class="btn btn-outline" onclick="closeModal('reviewRequestModal')">Cancel</button>
-      <button class="btn btn-danger" onclick="rejectRequest('${r._id}');closeModal('reviewRequestModal')">✕ Reject</button>
-      <button class="btn btn-success" onclick="approveRequest('${r._id}');closeModal('reviewRequestModal')">✓ Approve</button>`;
+      <button class="btn btn-danger" onclick="rejectRequest('${r._id || r.id}');closeModal('reviewRequestModal')">✕ Reject</button>
+      <button class="btn btn-success" onclick="approveRequest('${r._id || r.id}');closeModal('reviewRequestModal')">✓ Approve</button>`;
   } else {
     footer.innerHTML = `<button class="btn btn-outline" onclick="closeModal('reviewRequestModal')">Close</button>`;
   }
@@ -768,33 +769,46 @@ function openReview(id) {
 }
 
 async function approveRequest(id) {
-  const r = DB.getRequest(id);
-  if (r.target_type === 'class') {
-    const students = DB.getStudents(schoolId).filter(s => s.class === r.class_name);
-    await DB.updateRequest(id, { status: 'approved', reviewed_by: session.username, reviewed_at: new Date().toISOString() });
-    await DB.addLog(schoolId, `CLASS Request APPROVED: "${r.mistake}" for class ${r.class_name} — -${r.marks_removed} marks each`, session.username, 'approval');
-    showToast(`Approved for class ${r.class_name}. ${students.length} students updated.`, 'success');
-  } else {
-    const s = DB.getStudent(r.student_id);
-    if (!s) return;
-    await DB.updateRequest(id, { status: 'approved', reviewed_by: session.username, reviewed_at: new Date().toISOString() });
-    await DB.addLog(schoolId, `Request APPROVED: "${r.mistake}" for ${s.full_name} — -${r.marks_removed} marks`, session.username, 'approval');
-    showToast('Request approved & parent notified!', 'success');
+  try {
+    const r = DB.getRequest(id);
+    if (!r) { showToast('Request not found (id: ' + id + ')', 'error'); return; }
+    
+    if (r.target_type === 'class') {
+      const students = DB.getStudents(schoolId).filter(s => s.class === r.class_name);
+      await DB.updateRequest(id, { status: 'approved' });
+      await DB.addLog(schoolId, `CLASS Request APPROVED: "${r.mistake}" for class ${r.class_name} — -${r.marks_removed} marks each`, session.username, 'approval');
+      showToast(`Approved for class ${r.class_name}. ${students.length} students updated.`, 'success');
+    } else {
+      const s = DB.getStudent(r.student_id);
+      if (!s) { showToast('Student not found for this request (student id: ' + r.student_id + ')', 'error'); return; }
+      await DB.updateRequest(id, { status: 'approved' });
+      await DB.addLog(schoolId, `Request APPROVED: "${r.mistake}" for ${s.full_name} — -${r.marks_removed} marks`, session.username, 'approval');
+      showToast('Request approved & parent notified!', 'success');
+    }
+    updateBadges();
+    if (currentPage === 'requests') renderRequests();
+    else if (currentPage === 'dashboard') renderDashboard();
+  } catch (err) {
+    console.error(err);
+    showToast('Failed to approve: ' + err.message, 'error');
   }
-  updateBadges();
-  if (currentPage === 'requests') renderRequests();
-  else if (currentPage === 'dashboard') renderDashboard();
 }
 
 async function rejectRequest(id) {
-  const r = DB.getRequest(id);
-  const s = DB.getStudent(r.student_id);
-  await DB.updateRequest(id, { status: 'rejected', reviewed_by: session.username, reviewed_at: new Date().toISOString() });
-  await DB.addLog(schoolId, `Request REJECTED: "${r.mistake}" for ${s ? s.full_name : 'Unknown'}`, session.username, 'approval');
-  showToast('Request rejected.', 'warning');
-  updateBadges();
-  if (currentPage === 'requests') renderRequests();
-  else if (currentPage === 'dashboard') renderDashboard();
+  try {
+    const r = DB.getRequest(id);
+    if (!r) { showToast('Request not found', 'error'); return; }
+    const s = DB.getStudent(r.student_id);
+    await DB.updateRequest(id, { status: 'rejected' });
+    await DB.addLog(schoolId, `Request REJECTED: "${r.mistake}" for ${s ? s.full_name : 'Unknown'}`, session.username, 'approval');
+    showToast('Request rejected.', 'warning');
+    updateBadges();
+    if (currentPage === 'requests') renderRequests();
+    else if (currentPage === 'dashboard') renderDashboard();
+  } catch (err) {
+    console.error(err);
+    showToast('Failed to reject: ' + err.message, 'error');
+  }
 }
 
 // ── ANALYTICS PAGE ─────────────────────────────────────────────────
@@ -904,7 +918,7 @@ function renderSettings() {
         <input type="file" id="dodProfileUpload" accept="image/*" style="display:none;" onchange="handleDodPhotoUpload(this)">
         <button class="btn btn-outline" onclick="document.getElementById('dodProfileUpload').click()">Change Profile Picture</button>
       </div>
-      <div class="form-group"><label>School Name</label><input type="text" id="setSchoolName" value="${school.school_name}"></div>
+      <div class="form-group"><label>School Name</label><input type="text" id="setSchoolName" value="Kageyo TSS" disabled style="opacity:0.5;cursor:not-allowed;"></div>
       <div class="form-group" style="margin-top:12px;"><label>DoD Username</label><input type="text" id="setDodUser" value="${school.dod_username}"></div>
       <div style="margin-top:16px;"><button class="btn btn-primary" onclick="saveSchoolSettings()">Save Changes</button></div>
     </div>
@@ -1071,80 +1085,43 @@ async function confirmDelete(type, id, name) {
 // ── START ──────────────────────────────────────────────────────────
 // initDashboard() called at top of file
 
-// ── WHATSAPP ────────────────────────────────────────────────────────
-let waPolling = null;
+// ── DOD DIRECT MARK DEDUCTION ──────────────────────────────────────
+function openDeductModal(studentId, studentName) {
+  document.getElementById('deductStudentId').value = studentId;
+  document.getElementById('deductStudentName').textContent = studentName;
+  document.getElementById('deductMarks').value = 5;
+  document.getElementById('deductReason').value = '';
+  openModal('deductMarksModal');
+}
 
-async function waLoadStatus() {
+async function saveDeduction() {
+  const studentId = document.getElementById('deductStudentId').value;
+  const marks = parseInt(document.getElementById('deductMarks').value);
+  const reason = document.getElementById('deductReason').value.trim();
+  if (!marks || marks < 1 || marks > 100) { showToast('Enter a valid marks value (1-100).', 'warning'); return; }
+  if (!reason) { showToast('Please enter a reason.', 'warning'); return; }
+
   try {
-    const res = await fetch('/api/whatsapp/status');
+    const res = await fetch('/api/discipline/deduct', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ student_id: studentId, marks_removed: marks, reason, reviewed_by: session.username })
+    });
     const data = await res.json();
-    const statusEl = document.getElementById('waStatus');
-    const qrEl = document.getElementById('waQR');
-    const qrImg = document.getElementById('waQRImg');
-    const connectBtn = document.getElementById('waConnectBtn');
-    const disconnectBtn = document.getElementById('waDisconnectBtn');
-    if (!statusEl) return;
+    if (!res.ok) throw new Error(data.message);
 
-    if (data.status === 'ready') {
-      statusEl.innerHTML = '<span style="color:#10b981;font-weight:700;">✅ WhatsApp Connected & Ready</span>';
-      qrEl.style.display = 'none';
-      connectBtn.style.display = 'none';
-      disconnectBtn.style.display = 'inline-flex';
-      clearInterval(waPolling);
-    } else if (data.status === 'qr') {
-      statusEl.innerHTML = '<span style="color:#f59e0b;font-weight:700;">📱 Scan QR Code to connect</span>';
-      qrEl.style.display = 'block';
-      qrImg.src = data.qr;
-      connectBtn.style.display = 'none';
-      disconnectBtn.style.display = 'none';
-    } else if (data.status === 'authenticated') {
-      statusEl.innerHTML = '<span style="color:#6366f1;font-weight:700;">🔐 Authenticated, loading…</span>';
-    } else {
-      statusEl.innerHTML = '<span style="color:#ef4444;font-weight:700;">❌ Not Connected</span>';
-      qrEl.style.display = 'none';
-      connectBtn.style.display = 'inline-flex';
-      disconnectBtn.style.display = 'none';
-    }
-  } catch (e) {}
+    // Update local cache
+    const idx = DB.students.findIndex(s => String(s.id) === String(studentId) || String(s._id) === String(studentId));
+    if (idx !== -1) DB.students[idx].discipline_marks = data.newMarks;
+
+    await DB.addLog(schoolId, `DOD deducted -${marks} marks from ${document.getElementById('deductStudentName').textContent}: ${reason}`, session.username, 'approval');
+    showToast(`-${marks} marks deducted. Parent notified via WhatsApp.`, 'success');
+    closeModal('deductMarksModal');
+    renderStudents();
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  }
 }
-
-async function waConnect() {
-  await fetch('/api/whatsapp/connect', { method: 'POST' });
-  showToast('Connecting WhatsApp…', 'info');
-  waLoadStatus();
-  clearInterval(waPolling);
-  waPolling = setInterval(waLoadStatus, 3000);
-}
-
-async function waDisconnect() {
-  await fetch('/api/whatsapp/disconnect', { method: 'POST' });
-  showToast('WhatsApp disconnected', 'warning');
-  clearInterval(waPolling);
-  waLoadStatus();
-}
-
-async function waSendTest() {
-  const phone = prompt('Enter phone number to test (e.g. +250781234567):');
-  if (!phone) return;
-  const res = await fetch('/api/whatsapp/test', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone, message: 'Hello from DMS! WhatsApp notifications are working ✅' })
-  });
-  const data = await res.json();
-  showToast(data.success ? 'Test message sent!' : 'Failed: ' + data.message, data.success ? 'success' : 'error');
-}
-
-// Auto-load WhatsApp status when settings page opens
-const _origRenderSettings = renderSettings;
-renderSettings = function () {
-  _origRenderSettings();
-  setTimeout(() => {
-    waLoadStatus();
-    clearInterval(waPolling);
-    waPolling = setInterval(waLoadStatus, 5000);
-  }, 100);
-};
 
 // ── WHATSAPP ────────────────────────────────────────────────────────
 let waPolling = null;

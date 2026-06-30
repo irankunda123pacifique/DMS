@@ -24,12 +24,12 @@ pool.getConnection()
 app.locals.db = pool;
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '..')));
 
 // WhatsApp routes
 const whatsapp = require('./services/whatsapp');
-app.get('/api/whatsapp/status', (req, res) => res.json(whatsapp.getStatus()));
+app.get('/api/whatsapp/status',   (req, res) => res.json(whatsapp.getStatus()));
 app.post('/api/whatsapp/connect', (req, res) => { whatsapp.init(); res.json({ message: 'Connecting…' }); });
 app.post('/api/whatsapp/disconnect', (req, res) => { whatsapp.disconnect(); res.json({ message: 'Disconnected' }); });
 app.post('/api/whatsapp/pair', async (req, res) => {
@@ -41,18 +41,18 @@ app.post('/api/whatsapp/pair', async (req, res) => {
     } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 app.post('/api/whatsapp/test', async (req, res) => {
-    const result = await whatsapp.sendMessage(req.body.phone, req.body.message || 'Test from DMS');
+    const result = await whatsapp.sendMessage(req.body.phone, req.body.message || 'Test from DMS ✅');
     res.json(result);
 });
 
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/students', require('./routes/students'));
-app.use('/api/users', require('./routes/users'));
-app.use('/api/classes', require('./routes/classes'));
+app.use('/api/auth',       require('./routes/auth'));
+app.use('/api/students',   require('./routes/students'));
+app.use('/api/users',      require('./routes/users'));
+app.use('/api/classes',    require('./routes/classes'));
 app.use('/api/discipline', require('./routes/discipline'));
-app.use('/api/logs', require('./routes/logs'));
+app.use('/api/logs',       require('./routes/logs'));
 
-app.get(/.*/, (req, res) => {
+app.get('*', (req, res) => {
     if (req.path.startsWith('/api')) return res.status(404).json({ message: 'Not found' });
     res.sendFile(path.join(__dirname, '..', 'index.html'));
 });

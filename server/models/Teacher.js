@@ -1,60 +1,47 @@
 const getTeacherByUsername = async (db, username) => {
     try {
-        const snapshot = await db.collection('teachers').where('username', '==', username).limit(1).get();
-        if (snapshot.empty) return { data: null, error: null };
-        const doc = snapshot.docs[0];
-        return { data: { id: doc.id, ...doc.data() }, error: null };
+        const [rows] = await db.query('SELECT * FROM teachers WHERE username = ? LIMIT 1', [username]);
+        return { data: rows[0] || null, error: null };
     } catch (error) { return { data: null, error }; }
 };
 
 const getTeacherById = async (db, id) => {
     try {
-        const doc = await db.collection('teachers').doc(id).get();
-        if (!doc.exists) return { data: null, error: null };
-        return { data: { id: doc.id, ...doc.data() }, error: null };
+        const [rows] = await db.query('SELECT * FROM teachers WHERE id = ? LIMIT 1', [id]);
+        return { data: rows[0] || null, error: null };
     } catch (error) { return { data: null, error }; }
 };
 
 const getTeachersBySchool = async (db, school_id) => {
     try {
-        const snapshot = await db.collection('teachers').where('school_id', '==', school_id).get();
-        const teachers = [];
-        snapshot.forEach(doc => {
-            teachers.push({ id: doc.id, ...doc.data() });
-        });
-        return { data: teachers, error: null };
+        const [rows] = await db.query('SELECT * FROM teachers WHERE school_id = ?', [school_id]);
+        return { data: rows, error: null };
     } catch (error) { return { data: null, error }; }
 };
 
 const createTeacher = async (db, { school_id, name, username, password, subject, phone, status, profile_image }) => {
     try {
-        const docRef = await db.collection('teachers').add({
-            school_id,
-            name,
-            username,
-            password,
-            subject: subject || null,
-            phone: phone || null,
-            status: status || 'pending',
-            profile_image: profile_image || null,
-            created_at: new Date().toISOString()
-        });
-        const doc = await docRef.get();
-        return { data: { id: doc.id, ...doc.data() }, error: null };
+        const [result] = await db.query(
+            'INSERT INTO teachers (school_id, name, username, password, subject, phone, status, profile_image) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [school_id, name, username, password, subject || null, phone || null, status || 'pending', profile_image || null]
+        );
+        const [rows] = await db.query('SELECT * FROM teachers WHERE id = ?', [result.insertId]);
+        return { data: rows[0], error: null };
     } catch (error) { return { data: null, error }; }
 };
 
 const updateTeacher = async (db, id, updates) => {
     try {
-        await db.collection('teachers').doc(id).update(updates);
-        const doc = await db.collection('teachers').doc(id).get();
-        return { data: { id: doc.id, ...doc.data() }, error: null };
+        const fields = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+        await db.query(`UPDATE teachers SET ${fields} WHERE id = ?`, [...Object.values(updates), id]);
+        const [rows] = await db.query('SELECT * FROM teachers WHERE id = ?', [id]);
+        return { data: rows[0], error: null };
     } catch (error) { return { data: null, error }; }
 };
 
 const deleteTeacher = async (db, id) => {
     try {
-        await db.collection('teachers').doc(id).delete();
+        await db.query('DELETE FROM teachers WHERE id = ?', [id]);
         return { error: null };
     } catch (error) { return { error }; }
 };

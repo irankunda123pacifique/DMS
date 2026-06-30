@@ -1,46 +1,40 @@
 const getClassesBySchool = async (db, school_id) => {
     try {
-        const snapshot = await db.collection('classes').where('school_id', '==', school_id).get();
-        const classes = [];
-        snapshot.forEach(doc => {
-            classes.push({ id: doc.id, ...doc.data() });
-        });
-        return { data: classes, error: null };
+        const [rows] = await db.query('SELECT * FROM classes WHERE school_id = ?', [school_id]);
+        return { data: rows, error: null };
     } catch (error) { return { data: null, error }; }
 };
 
 const getClassById = async (db, id) => {
     try {
-        const doc = await db.collection('classes').doc(id).get();
-        if (!doc.exists) return { data: null, error: null };
-        return { data: { id: doc.id, ...doc.data() }, error: null };
+        const [rows] = await db.query('SELECT * FROM classes WHERE id = ? LIMIT 1', [id]);
+        return { data: rows[0] || null, error: null };
     } catch (error) { return { data: null, error }; }
 };
 
 const createClass = async (db, { school_id, name, teacher_id }) => {
     try {
-        const docRef = await db.collection('classes').add({
-            school_id,
-            name,
-            teacher_id: teacher_id || null,
-            created_at: new Date().toISOString()
-        });
-        const doc = await docRef.get();
-        return { data: { id: doc.id, ...doc.data() }, error: null };
+        const [result] = await db.query(
+            'INSERT INTO classes (school_id, name, teacher_id) VALUES (?, ?, ?)',
+            [school_id, name, teacher_id || null]
+        );
+        const [rows] = await db.query('SELECT * FROM classes WHERE id = ?', [result.insertId]);
+        return { data: rows[0], error: null };
     } catch (error) { return { data: null, error }; }
 };
 
 const updateClass = async (db, id, updates) => {
     try {
-        await db.collection('classes').doc(id).update(updates);
-        const doc = await db.collection('classes').doc(id).get();
-        return { data: { id: doc.id, ...doc.data() }, error: null };
+        const fields = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+        await db.query(`UPDATE classes SET ${fields} WHERE id = ?`, [...Object.values(updates), id]);
+        const [rows] = await db.query('SELECT * FROM classes WHERE id = ?', [id]);
+        return { data: rows[0], error: null };
     } catch (error) { return { data: null, error }; }
 };
 
 const deleteClass = async (db, id) => {
     try {
-        await db.collection('classes').doc(id).delete();
+        await db.query('DELETE FROM classes WHERE id = ?', [id]);
         return { error: null };
     } catch (error) { return { error }; }
 };

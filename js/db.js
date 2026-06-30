@@ -164,7 +164,7 @@ const DB = {
         return this.students;
     },
     getStudent(id) {
-        return this.students.find(s => s.id === id || s._id === id) || null;
+        return this.students.find(s => String(s.id) === String(id) || String(s._id) === String(id)) || null;
     },
     async createStudent(data) {
         const newStudent = await _request('/students', {
@@ -179,7 +179,7 @@ const DB = {
             method: 'PATCH',
             body: JSON.stringify(updates)
         });
-        const idx = this.students.findIndex(s => s.id === id || s._id === id);
+        const idx = this.students.findIndex(s => String(s.id) === String(id) || String(s._id) === String(id));
         if (idx !== -1) {
             this.students[idx] = updated;
         }
@@ -187,7 +187,7 @@ const DB = {
     },
     async deleteStudent(id) {
         await _request(`/students/${id}`, { method: 'DELETE' });
-        this.students = this.students.filter(s => s.id !== id && s._id !== id);
+        this.students = this.students.filter(s => String(s.id) !== String(id) && String(s._id) !== String(id));
     },
 
     // ── Teachers ──
@@ -195,14 +195,14 @@ const DB = {
         return this.teachers;
     },
     getTeacher(id) {
-        return this.teachers.find(t => t.id === id || t._id === id) || null;
+        return this.teachers.find(t => String(t.id) === String(id) || String(t._id) === String(id)) || null;
     },
     async updateTeacher(id, updates) {
         const updated = await _request(`/users/teachers/${id}`, {
             method: 'PATCH',
             body: JSON.stringify(updates)
         });
-        const idx = this.teachers.findIndex(t => t.id === id || t._id === id);
+        const idx = this.teachers.findIndex(t => String(t.id) === String(id) || String(t._id) === String(id));
         if (idx !== -1) {
             this.teachers[idx] = updated;
         }
@@ -210,7 +210,7 @@ const DB = {
     },
     async deleteTeacher(id) {
         await _request(`/users/teachers/${id}`, { method: 'DELETE' });
-        this.teachers = this.teachers.filter(t => t.id !== id && t._id !== id);
+        this.teachers = this.teachers.filter(t => String(t.id) !== String(id) && String(t._id) !== String(id));
     },
 
     // ── Staff ──
@@ -218,14 +218,14 @@ const DB = {
         return this.staff;
     },
     getStaff(id) {
-        return this.staff.find(s => s.id === id || s._id === id) || null;
+        return this.staff.find(s => String(s.id) === String(id) || String(s._id) === String(id)) || null;
     },
     async updateStaff(id, updates) {
         const updated = await _request(`/users/staff/${id}`, {
             method: 'PATCH',
             body: JSON.stringify(updates)
         });
-        const idx = this.staff.findIndex(s => s.id === id || s._id === id);
+        const idx = this.staff.findIndex(s => String(s.id) === String(id) || String(s._id) === String(id));
         if (idx !== -1) {
             this.staff[idx] = updated;
         }
@@ -233,7 +233,7 @@ const DB = {
     },
     async deleteStaff(id) {
         await _request(`/users/staff/${id}`, { method: 'DELETE' });
-        this.staff = this.staff.filter(s => s.id !== id && s._id !== id);
+        this.staff = this.staff.filter(s => String(s.id) !== String(id) && String(s._id) !== String(id));
     },
 
     // ── Classes ──
@@ -244,7 +244,7 @@ const DB = {
         return this.classes.find(c => c.name.toLowerCase() === name.toLowerCase()) || null;
     },
     getClass(id) {
-        return this.classes.find(c => c.id === id || c._id === id) || null;
+        return this.classes.find(c => String(c.id) === String(id) || String(c._id) === String(id)) || null;
     },
     async createClass(data) {
         const newClass = await _request('/classes', {
@@ -259,7 +259,7 @@ const DB = {
             method: 'PATCH',
             body: JSON.stringify(updates)
         });
-        const idx = this.classes.findIndex(c => c.id === id || c._id === id);
+        const idx = this.classes.findIndex(c => String(c.id) === String(id) || String(c._id) === String(id));
         if (idx !== -1) {
             this.classes[idx] = updated;
         }
@@ -267,7 +267,7 @@ const DB = {
     },
     async deleteClass(id) {
         await _request(`/classes/${id}`, { method: 'DELETE' });
-        this.classes = this.classes.filter(c => c.id !== id && c._id !== id);
+        this.classes = this.classes.filter(c => String(c.id) !== String(id) && String(c._id) !== String(id));
     },
 
     // ── Discipline Requests ──
@@ -275,7 +275,7 @@ const DB = {
         return this.requests;
     },
     getRequest(id) {
-        return this.requests.find(r => r.id === id || r._id === id) || null;
+        return this.requests.find(r => String(r.id) === String(id) || String(r._id) === String(id)) || null;
     },
     getRequestsByTeacher(teacherId) {
         return this.requests.filter(r => r.teacher_id === teacherId);
@@ -295,14 +295,12 @@ const DB = {
         return newReq;
     },
     async updateRequest(id, updates) {
-        const endpoint = (updates.status && ['approved', 'rejected'].includes(updates.status))
-            ? `/discipline/${id}/review`
-            : `/discipline/${id}`;
+        const endpoint = `/discipline/${id}`;
         const updated = await _request(endpoint, {
             method: 'PATCH',
             body: JSON.stringify(updates)
         });
-        const idx = this.requests.findIndex(r => r.id === id || r._id === id);
+        const idx = this.requests.findIndex(r => String(r.id) === String(id) || String(r._id) === String(id));
         if (idx !== -1) {
             this.requests[idx] = updated;
         }
@@ -318,7 +316,7 @@ const DB = {
     },
     async deleteRequest(id) {
         await _request(`/discipline/${id}`, { method: 'DELETE' });
-        this.requests = this.requests.filter(r => r.id !== id && r._id !== id);
+        this.requests = this.requests.filter(r => String(r.id) !== String(id) && String(r._id) !== String(id));
     },
 
     // ── Logs ──
@@ -586,10 +584,4 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Load the session automatically on page load to initialize DB cache
-(async () => {
-    const session = Auth.getSession();
-    if (session && session.schoolId) {
-        await DB.load(session.schoolId);
-    }
-})();
+// DB cache is loaded explicitly by each dashboard on init

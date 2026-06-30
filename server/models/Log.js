@@ -1,39 +1,24 @@
 const getLogsBySchool = async (db, school_id) => {
     try {
-        const snapshot = await db.collection('logs').where('school_id', '==', school_id).get();
-        const logs = [];
-        snapshot.forEach(doc => {
-            logs.push({ id: doc.id, ...doc.data() });
-        });
-        // Sort in memory to avoid Firestore composite index requirement
-        logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        return { data: logs, error: null };
+        const [rows] = await db.query('SELECT * FROM logs WHERE school_id = ? ORDER BY timestamp DESC', [school_id]);
+        return { data: rows, error: null };
     } catch (error) { return { data: null, error }; }
 };
 
-const createLog = async (db, { school_id, message, user, category, action_type, timestamp }) => {
+const createLog = async (db, { school_id, message, user, category, action_type }) => {
     try {
-        const docRef = await db.collection('logs').add({
-            school_id,
-            message,
-            user,
-            category,
-            action_type: action_type || null,
-            timestamp: timestamp || new Date().toISOString()
-        });
-        const doc = await docRef.get();
-        return { data: { id: doc.id, ...doc.data() }, error: null };
+        const [result] = await db.query(
+            'INSERT INTO logs (school_id, message, user, category, action_type) VALUES (?, ?, ?, ?, ?)',
+            [school_id, message, user, category, action_type || null]
+        );
+        const [rows] = await db.query('SELECT * FROM logs WHERE id = ?', [result.insertId]);
+        return { data: rows[0], error: null };
     } catch (error) { return { data: null, error }; }
 };
 
 const deleteLogs = async (db, school_id) => {
     try {
-        const snapshot = await db.collection('logs').where('school_id', '==', school_id).get();
-        const batch = db.batch();
-        snapshot.docs.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-        await batch.commit();
+        await db.query('DELETE FROM logs WHERE school_id = ?', [school_id]);
         return { error: null };
     } catch (error) { return { error }; }
 };

@@ -1,55 +1,40 @@
 const getRequestsBySchool = async (db, school_id) => {
     try {
-        const snapshot = await db.collection('discipline_requests').where('school_id', '==', school_id).get();
-        const requests = [];
-        snapshot.forEach(doc => {
-            requests.push({ id: doc.id, ...doc.data() });
-        });
-        // Sort in memory to avoid Firestore composite index requirement
-        requests.sort((a, b) => new Date(b.date) - new Date(a.date));
-        return { data: requests, error: null };
+        const [rows] = await db.query('SELECT * FROM discipline_requests WHERE school_id = ? ORDER BY date DESC', [school_id]);
+        return { data: rows, error: null };
     } catch (error) { return { data: null, error }; }
 };
 
 const getRequestById = async (db, id) => {
     try {
-        const doc = await db.collection('discipline_requests').doc(id).get();
-        if (!doc.exists) return { data: null, error: null };
-        return { data: { id: doc.id, ...doc.data() }, error: null };
+        const [rows] = await db.query('SELECT * FROM discipline_requests WHERE id = ? LIMIT 1', [id]);
+        return { data: rows[0] || null, error: null };
     } catch (error) { return { data: null, error }; }
 };
 
 const createRequest = async (db, { school_id, teacher_id, staff_id, student_id, class_name, mistake, marks_removed, notes, status, target_type }) => {
     try {
-        const docRef = await db.collection('discipline_requests').add({
-            school_id,
-            teacher_id: teacher_id || null,
-            staff_id: staff_id || null,
-            student_id: student_id || null,
-            class_name: class_name || null,
-            mistake,
-            marks_removed: Number(marks_removed),
-            notes: notes || null,
-            status: status || 'pending',
-            target_type,
-            date: new Date().toISOString()
-        });
-        const doc = await docRef.get();
-        return { data: { id: doc.id, ...doc.data() }, error: null };
+        const [result] = await db.query(
+            'INSERT INTO discipline_requests (school_id, teacher_id, staff_id, student_id, class_name, mistake, marks_removed, notes, status, target_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [school_id, teacher_id || null, staff_id || null, student_id || null, class_name || null, mistake, Number(marks_removed), notes || null, status || 'pending', target_type]
+        );
+        const [rows] = await db.query('SELECT * FROM discipline_requests WHERE id = ?', [result.insertId]);
+        return { data: rows[0], error: null };
     } catch (error) { return { data: null, error }; }
 };
 
 const updateRequest = async (db, id, updates) => {
     try {
-        await db.collection('discipline_requests').doc(id).update(updates);
-        const doc = await db.collection('discipline_requests').doc(id).get();
-        return { data: { id: doc.id, ...doc.data() }, error: null };
+        const fields = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+        await db.query(`UPDATE discipline_requests SET ${fields} WHERE id = ?`, [...Object.values(updates), id]);
+        const [rows] = await db.query('SELECT * FROM discipline_requests WHERE id = ?', [id]);
+        return { data: rows[0], error: null };
     } catch (error) { return { data: null, error }; }
 };
 
 const deleteRequest = async (db, id) => {
     try {
-        await db.collection('discipline_requests').doc(id).delete();
+        await db.query('DELETE FROM discipline_requests WHERE id = ?', [id]);
         return { error: null };
     } catch (error) { return { error }; }
 };

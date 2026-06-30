@@ -1,5 +1,4 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
-
+let Client, LocalAuth;
 let client = null;
 let isReady = false;
 let pairingCode = null;
@@ -7,6 +6,7 @@ let status = 'disconnected';
 
 function init() {
     if (client) return;
+    if (!Client) ({ Client, LocalAuth } = require('whatsapp-web.js'));
     status = 'connecting';
 
     client = new Client({
@@ -74,17 +74,27 @@ function disconnect() {
 }
 
 async function sendMessage(phone, message) {
-    if (!isReady || !client) return { success: false, message: 'WhatsApp not connected' };
+    if (!isReady || !client) {
+        console.log('WhatsApp send failed: Not connected.');
+        return { success: false, message: 'WhatsApp not connected' };
+    }
     try {
-        const cleaned = phone.replace(/\D/g, '');
+        let cleaned = phone.replace(/\D/g, '');
+        // Auto-format local Rwandan numbers (e.g. 078... -> 25078...)
+        if (cleaned.startsWith('0') && cleaned.length === 10) {
+            cleaned = '250' + cleaned.substring(1);
+        }
+        console.log(`Sending WhatsApp message to ${cleaned}@c.us...`);
         await client.sendMessage(cleaned + '@c.us', message);
+        console.log('WhatsApp message sent successfully.');
         return { success: true };
     } catch (err) {
+        console.error('WhatsApp send error:', err.message);
         return { success: false, message: err.message };
     }
 }
 
-async function notifyParent(student, marksRemoved, reason, schoolName = 'DMS School') {
+async function notifyParent(student, marksRemoved, reason, schoolName = process.env.WHATSAPP_SCHOOL_NAME || 'Kageyo TSS') {
     if (!student.parent_phone) return { success: false, message: 'No parent phone' };
     const message =
 `Dear ${student.parent_name || 'Parent'},

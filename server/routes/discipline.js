@@ -4,46 +4,6 @@ const DisciplineRequest = require('../models/DisciplineRequest');
 const Student = require('../models/Student');
 const whatsapp = require('../services/whatsapp');
 
-// WhatsApp status
-router.get('/whatsapp/status', (req, res) => {
-    res.json({ ready: whatsapp.isReady() });
-});
-
-// Initialize WhatsApp Web manually
-router.post('/whatsapp/init', (req, res) => {
-    try {
-        whatsapp.init();
-        res.json({ message: 'WhatsApp Web initialization started', note: 'Check server logs for QR code' });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
-
-// Send custom WhatsApp message / notify parent manually
-router.post('/whatsapp/send', async (req, res) => {
-    try {
-        const { phoneNumber, message } = req.body;
-        if (!phoneNumber || !message) {
-            return res.status(400).json({ message: 'Phone number and message are required' });
-        }
-        const result = await whatsapp.sendMessage(phoneNumber, message);
-        res.json(result);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
-
-// Test WhatsApp endpoint
-router.post('/whatsapp/test', async (req, res) => {
-    try {
-        const { phoneNumber, message } = req.body;
-        const result = await whatsapp.sendMessage(phoneNumber || 'test', message || 'Test message');
-        res.json(result);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
-
 router.get('/:schoolId', async (req, res) => {
     try {
         const { data, error } = await DisciplineRequest.getRequestsBySchool(req.app.locals.db, req.params.schoolId);
@@ -60,81 +20,75 @@ router.post('/', async (req, res) => {
     } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
-router.patch('/:id/review', async (req, res) => {
+// Generic patch (status updates from dashboard)
+router.patch('/:id', async (req, res) => {
     try {
         const db = req.app.locals.db;
-        const { status, reviewed_by } = req.body;
-        if (!['approved', 'rejected'].includes(status)) {
-            return res.status(400).json({ message: 'Status must be approved or rejected' });
-        }
+        const updates = { ...req.body };
 
-        const { data: request } = await DisciplineRequest.getRequestById(db, req.params.id);
-        if (!request) return res.status(404).json({ message: 'Request not found' });
-
-        if (request.status !== 'pending') {
-            return res.status(400).json({ message: 'Request has already been reviewed' });
-        }
-
-        const marksRemoved = Number(request.marks_removed || 0);
-        const notified = [];
-
-        if (status === 'approved') {
-            if (request.target_type === 'class') {
-                const { data: students, error } = await Student.getStudentsBySchool(db, request.school_id);
-                if (error) throw error;
-
-                const classStudents = (students || []).filter(student => student.class === request.class_name);
-                for (const student of classStudents) {
-                    const currentMarks = Number(student.discipline_marks ?? 100);
-                    const discipline_marks = Math.max(0, currentMarks - marksRemoved);
-                    const { data: updatedStudent, error: updateError } = await Student.updateStudent(db, student.id, { discipline_marks });
-                    if (updateError) throw updateError;
-
-                    if (updatedStudent && updatedStudent.parent_phone) {
-                        notified.push(await whatsapp.notifyParent(
-                            updatedStudent,
-                            marksRemoved,
-                            request.mistake || request.notes || 'Discipline violation'
-                        ));
+        // If approving, deduct marks
+        if (updates.status === 'approved') {
+            const { data: request } = await DisciplineRequest.getRequestById(db, req.params.id);
+            if (request && request.status === 'pending') {
+                const marksRemoved = Number(request.marks_removed || 0);
+                if (request.target_type === 'class') {
+                    const { data: students } = await Student.getStudentsBySchool(db, request.school_id);
+                    for (const s of (students || []).filter(s => s.class === request.class_name)) {
+                        const newMarks = Math.max(0, Number(s.discipline_marks ?? 100) - marksRemoved);
+                        const { data: updated } = await Student.updateStudent(db, s.id, { discipline_marks: newMarks });
+                        if (updated && updated.parent_phone) {
+                            whatsapp.notifyParent(updated, marksRemoved, request.mistake).catch(() => {});
+                        }
                     }
-                }
-            } else if (request.student_id) {
-                const { data: student } = await Student.getStudentById(db, request.student_id);
-                if (!student) return res.status(404).json({ message: 'Student not found' });
-
-                const currentMarks = Number(student.discipline_marks ?? 100);
-                const discipline_marks = Math.max(0, currentMarks - marksRemoved);
-                const { data: updatedStudent, error: updateError } = await Student.updateStudent(db, student.id, { discipline_marks });
-                if (updateError) throw updateError;
-
-                if (updatedStudent.parent_phone) {
-                    notified.push(await whatsapp.notifyParent(
-                        updatedStudent,
-                        marksRemoved,
-                        request.mistake || request.notes || 'Discipline violation'
-                    ));
+                } else if (request.student_id) {
+                    const { data: s } = await Student.getStudentById(db, request.student_id);
+                    if (s) {
+                        const newMarks = Math.max(0, Number(s.discipline_marks ?? 100) - marksRemoved);
+                        const { data: updated } = await Student.updateStudent(db, s.id, { discipline_marks: newMarks });
+                        if (updated && updated.parent_phone) {
+                            whatsapp.notifyParent(updated, marksRemoved, request.mistake).catch(() => {});
+                        }
+                    }
                 }
             }
         }
 
-        const { data: updated, error } = await DisciplineRequest.updateRequest(db, req.params.id, {
-            status,
-            reviewed_by: reviewed_by || null,
-            reviewed_at: new Date().toISOString()
-        });
-        if (error) throw error;
+        if (!updates.reviewed_at && (updates.status === 'approved' || updates.status === 'rejected')) {
+            updates.reviewed_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        }
 
-        res.json({ ...updated, notifications: notified });
+        const { data, error } = await DisciplineRequest.updateRequest(db, req.params.id, updates);
+        if (error) throw error;
+        res.json(data);
     } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+// DOD direct mark deduction — no request needed
+router.post('/deduct', async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { student_id, marks_removed, reason, reviewed_by } = req.body;
+        if (!student_id || !marks_removed || !reason) return res.status(400).json({ message: 'student_id, marks_removed, reason required' });
+
+        const { data: student } = await Student.getStudentById(db, student_id);
+        if (!student) return res.status(404).json({ message: 'Student not found' });
+
+        const newMarks = Math.max(0, Number(student.discipline_marks ?? 100) - Number(marks_removed));
+        const { data: updated } = await Student.updateStudent(db, student_id, { discipline_marks: newMarks });
+
+        // Send WhatsApp notification to parent
+        if (updated && updated.parent_phone) {
+            whatsapp.notifyParent(updated, marks_removed, reason).catch(e => console.error('WA notify error:', e.message));
+        }
+
+        res.json({ success: true, student: updated, newMarks });
+    } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
 router.delete('/:id', async (req, res) => {
     try {
-        const db = req.app.locals.db;
-        const { data: request } = await DisciplineRequest.getRequestById(db, req.params.id);
-        if (!request) return res.status(404).json({ message: 'Request not found' });
-        if (request.status !== 'pending') return res.status(400).json({ message: 'Cannot delete already reviewed request' });
-        await DisciplineRequest.deleteRequest(db, req.params.id);
+        const { error } = await DisciplineRequest.deleteRequest(req.app.locals.db, req.params.id);
+        if (error) throw error;
         res.json({ message: 'Request deleted' });
     } catch (err) { res.status(500).json({ message: err.message }); }
 });

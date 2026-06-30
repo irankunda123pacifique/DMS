@@ -8,23 +8,29 @@ let staff = null;
 // ── Initialization ───────────────────────────────────────────────
 async function initDashboard() {
   await DB.load(schoolId);
-  staff = DB.getStaff(session.id);
-  if (!staff) {
-    showToast('Staff record not found.', 'error');
-    return;
-  }
+
+  // Robust lookup: try by id, _id, or username
+  staff = DB.getStaff(session.id)
+    || DB.staff.find(s => String(s.id) === String(session.id)
+                       || String(s._id) === String(session.id)
+                       || s.username === session.username)
+    || null;
 
   const school = await DB.getSchool(schoolId);
   document.getElementById('sidebarSchoolName').textContent = school ? school.school_name : 'DMS';
-  document.getElementById('sidebarAvatar').innerHTML = renderAvatar(staff, 40);
-  document.getElementById('topbarAvatar').innerHTML = renderAvatar(staff, 36);
-  document.getElementById('sidebarName').textContent = staff.name;
 
-  // Populate settings fields
-  document.getElementById('setStaffName').value = staff.name;
-  document.getElementById('setStaffPosition').value = staff.position || '';
-  document.getElementById('setStaffPhone').value = staff.phone || '';
-  document.getElementById('profilePreview').innerHTML = renderAvatar(staff, 100);
+  if (staff) {
+    document.getElementById('sidebarAvatar').innerHTML = renderAvatar(staff, 40);
+    document.getElementById('topbarAvatar').innerHTML = renderAvatar(staff, 36);
+    document.getElementById('sidebarName').textContent = staff.name;
+    document.getElementById('setStaffName').value = staff.name;
+    document.getElementById('setStaffPosition').value = staff.position || '';
+    document.getElementById('setStaffPhone').value = staff.phone || '';
+    document.getElementById('profilePreview').innerHTML = renderAvatar(staff, 100);
+  } else {
+    document.getElementById('sidebarName').textContent = session.username || 'Staff';
+    showToast('Profile data not found. Contact admin.', 'warning');
+  }
 
   navigate('home');
 }
@@ -328,6 +334,88 @@ async function submitReport() {
   renderHome();
 }
 
-function renderScan() { navigate('scan'); }
-function renderSubmitPage() { navigate('submit'); }
-function renderHistory() { navigate('history'); }
+function renderScan() {
+  document.getElementById('pageContent').innerHTML = `<div class="fade-in">
+    <div style="max-width:600px;margin:0 auto;">
+      <div class="card" style="margin-bottom:20px;">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:12px;">Scan Student QR Code</h3>
+        <div id="qrReader" style="width:100%;border-radius:12px;overflow:hidden;"></div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button class="btn btn-primary" style="flex:1" id="startScanBtn" onclick="startScan()">Start Camera</button>
+          <button class="btn btn-outline" style="flex:1" id="stopScanBtn" onclick="stopScan()">Stop Camera</button>
+        </div>
+      </div>
+      <div id="scanResultCard" style="display:none;" class="card">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;">✅ Student Identified</h3>
+        <div id="scanResultBody"></div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button class="btn btn-primary" style="flex:1" onclick="submitFromScan()">Submit Discipline Report</button>
+          <button class="btn btn-outline" onclick="resetScan()">Scan Again</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderSubmitPage() {
+  populateStudentSelect();
+  openModal('submitModal');
+}
+
+function openSubmitModal() {
+  populateStudentSelect();
+  openModal('submitModal');
+}
+
+function renderHistory() {
+  const myRequests = DB.getRequestsByStaff(session.id);
+  myRequests.sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
+
+  document.getElementById('pageContent').innerHTML = `<div class="fade-in">
+    <div class="section-header"><div><h2>My Reports</h2><p>${myRequests.length} submissions total</p></div></div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      ${myRequests.length === 0
+        ? '<div class="empty-state"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6z"/></svg><h3>No reports yet</h3><p>Submit a discipline report to see it here.</p></div>'
+        : myRequests.map(r => {
+            const s = DB.getStudent(r.student_id);
+            return `<div class="request-card ${r.status}">
+              <div class="request-card-header">
+                <div>
+                  <div class="request-mistake">${r.mistake}</div>
+                  <div class="request-meta">
+                    <span>👤 ${r.target_type === 'class' ? 'Class: ' + r.class_name : (s ? s.full_name : 'Unknown')}</span>
+                    <span>·</span><span>📅 ${formatDate(r.date || r.createdAt)}</span>
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <span class="badge badge-danger">-${r.marks_removed} marks</span>
+                  ${getStatusBadge(r.status)}
+                </div>
+              </div>
+              ${r.notes ? `<div class="request-notes">${r.notes}</div>` : ''}
+            </div>`;
+          }).join('')
+      }
+    </div>
+  </div>`;
+}
+
+function filterStaffStudents(q) {
+  let students = DB.getStudents(schoolId);
+  if (q) students = students.filter(s => s.full_name.toLowerCase().includes(q.toLowerCase()));
+  const container = document.getElementById('staffStudentsList');
+  if (!container) return;
+  if (!students.length) {
+    container.innerHTML = '<div class="empty-state" style="padding:20px;"><p>No students found.</p></div>';
+    return;
+  }
+  container.innerHTML = `<div class="table-wrapper"><table>
+    <thead><tr><th>Student</th><th>Class</th><th>Gender</th><th>Marks</th></tr></thead>
+    <tbody>${students.map(s => `<tr>
+      <td><div style="display:flex;align-items:center;gap:10px;">${renderAvatar(s, 28, '0.7rem')}<span style="font-weight:600;">${s.full_name}</span></div></td>
+      <td><span class="badge badge-info">${s.class}</span></td>
+      <td>${s.gender || '—'}</td>
+      <td><span class="badge ${getMarksBadge(s.discipline_marks)}">${s.discipline_marks}/100</span></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}

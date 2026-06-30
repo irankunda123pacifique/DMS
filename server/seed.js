@@ -10,14 +10,15 @@ async function seed() {
         password: process.env.DB_PASSWORD || '1234'
     });
 
-    // Insert default school/DOD
     await db.query(`
         INSERT INTO schools (school_name, dod_username, password, promo_code)
-        VALUES ('Greenfield Academy', 'dod', 'dod123', 'TEACHER2026')
-        ON DUPLICATE KEY UPDATE password='dod123'
+        VALUES ('Kageyo TSS', 'dod', 'dod123', 'TEACHER2026')
+        ON DUPLICATE KEY UPDATE school_name='Kageyo TSS', password='dod123'
     `);
 
-    console.log('✅ Seeded: DOD login → username: dod | password: dod123');
+    const [[school]] = await db.query(`SELECT * FROM schools WHERE dod_username='dod'`);
+    console.log('✅ School:', school);
+    console.log('✅ Login → username: dod | password: dod123');
     await db.end();
 }
 
