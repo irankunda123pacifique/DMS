@@ -295,7 +295,7 @@ function renderStudentListOnly() {
   container.innerHTML = `<div class="table-wrapper"><table>
     <thead><tr><th>Student</th><th>Gender</th><th>Class</th><th>Marks</th><th>Actions</th></tr></thead>
     <tbody>${students.map(s => `<tr>
-      <td><div style="display:flex;align-items:center;gap:10px;">
+      <td><div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="viewStudent('${s._id}')" title="Click to view profile">
         ${renderAvatar(s, 34, '0.8rem')}
         <span style="font-weight:600;">${s.full_name}</span></div></td>
       <td>${s.gender || '—'}</td>
@@ -339,7 +339,7 @@ async function viewClassDetails(id) {
 
   // Student List
   const list = document.getElementById('classNameStudentsList');
-  list.innerHTML = students.map(s => `<tr>
+  list.innerHTML = students.map(s => `<tr style="cursor:pointer;" onclick="closeModal('viewClassModal');viewStudent('${s._id}')" title="Click to view profile">
     <td><div style="display:flex;align-items:center;gap:10px;">${renderAvatar(s, 28, '0.7rem')}${s.full_name}</div></td>
     <td>${s.gender || '—'}</td>
     <td><span class="badge ${getMarksBadge(s.discipline_marks)}">${s.discipline_marks}/100</span></td>
@@ -563,35 +563,68 @@ function viewStudent(id) {
   const s = DB.getStudent(id);
   if (!s) return;
   const cls = getMarksClass(s.discipline_marks);
+  const marksColor = cls === 'excellent' ? '#10b981' : cls === 'good' ? '#84cc16' : cls === 'warning' ? '#f59e0b' : '#ef4444';
   const body = document.getElementById('viewStudentBody');
+  const photoHtml = s.profile_image
+    ? `<img src="${s.profile_image}" onclick="showImageZoom('${s.profile_image}')" style="width:100%;height:100%;object-fit:cover;cursor:zoom-in;" title="Click to zoom">`
+    : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.5rem;font-weight:800;background:${avatarGrad(s.full_name)};color:white;">${getInitials(s.full_name)}</div>`;
+
   body.innerHTML = `
-    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">
+
+      <!-- Left: Photo + marks -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px;min-width:160px;">
+        <div style="width:140px;height:140px;border-radius:16px;overflow:hidden;border:3px solid ${marksColor};box-shadow:0 0 20px ${marksColor}44;flex-shrink:0;">
+          ${photoHtml}
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:2.8rem;font-weight:900;color:${marksColor};line-height:1;">${s.discipline_marks}</div>
+          <div style="font-size:0.75rem;color:#64748b;margin-top:2px;">/ 100 marks</div>
+          <span class="badge ${getMarksBadge(s.discipline_marks)}" style="margin-top:6px;display:inline-block;">${cls.toUpperCase()}</span>
+        </div>
+        <div class="progress-bar" style="width:140px;"><div class="progress-fill ${s.discipline_marks < 40 ? 'high' : s.discipline_marks < 60 ? 'medium' : ''}" style="width:${s.discipline_marks}%"></div></div>
+      </div>
+
+      <!-- Right: Info -->
       <div style="flex:1;min-width:200px;">
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
-          ${renderAvatar(s, 64, '1.25rem')}
-          <div>
-            <h3 style="font-size:1.25rem;font-weight:800;">${s.full_name}</h3>
-            <span class="badge badge-info">Class ${s.class}</span>
+        <h3 style="font-size:1.4rem;font-weight:800;margin-bottom:4px;">${s.full_name}</h3>
+        <span class="badge badge-info" style="margin-bottom:16px;display:inline-block;">Class ${s.class}</span>
+
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:0.875rem;">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:10px;">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;color:#818cf8;flex-shrink:0;"><path d="M12 12c2.7 0 4-1.3 4-4s-1.3-4-4-4-4 1.3-4 4 1.3 4 4 4zm0 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4z"/></svg>
+            <div><div style="font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Gender</div><strong>${s.gender || '—'}</strong></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:10px;">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;color:#10b981;flex-shrink:0;"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            <div><div style="font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Parent Name</div><strong>${s.parent_name || '—'}</strong></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:10px;">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;color:#f59e0b;flex-shrink:0;"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+            <div><div style="font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Parent Phone</div><strong>${s.parent_phone || '—'}</strong></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:10px;">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;color:#6366f1;flex-shrink:0;"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+            <div><div style="font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Enrolled</div><strong>${formatDate(s.created_at)}</strong></div>
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:8px;font-size:0.875rem;">
-          <div style="display:flex;gap:8px;"><span style="color:#64748b;width:120px;">Parent Name</span><strong>${s.parent_name}</strong></div>
-          <div style="display:flex;gap:8px;"><span style="color:#64748b;width:120px;">Parent Phone</span><strong>${s.parent_phone}</strong></div>
-          <div style="display:flex;gap:8px;"><span style="color:#64748b;width:120px;">Enrolled</span><strong>${formatDate(s.created_at)}</strong></div>
-        </div>
-        <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,0.2);border-radius:10px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <span style="font-size:0.875rem;color:#94a3b8;">Discipline Marks</span>
-            <span class="${getMarksBadge(s.discipline_marks)} badge">${cls.toUpperCase()}</span>
-          </div>
-          <div style="font-size:2.5rem;font-weight:900;color:${cls === 'excellent' ? '#10b981' : cls === 'good' ? '#84cc16' : cls === 'warning' ? '#f59e0b' : '#ef4444'}">${s.discipline_marks}<span style="font-size:1rem;color:#64748b;">/100</span></div>
-          <div class="progress-bar" style="margin-top:8px;"><div class="progress-fill ${s.discipline_marks < 40 ? 'high' : s.discipline_marks < 60 ? 'medium' : ''}" style="width:${s.discipline_marks}%"></div></div>
+
+        <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+          <button class="btn btn-warning btn-sm" onclick="closeModal('viewStudentModal');openDeductModal('${s._id}','${s.full_name.replace(/'/g, "&#39;")}')">
+            − Deduct Marks
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="closeModal('viewStudentModal');editStudent('${s._id}')">
+            ✏ Edit
+          </button>
         </div>
       </div>
+
+      <!-- QR Code -->
       <div class="qr-container" id="studentQRCode" style="flex-shrink:0;">
         <div style="color:#64748b;font-size:0.875rem;">Generating QR…</div>
       </div>
     </div>`;
+
   openModal('viewStudentModal');
   const qrData = JSON.stringify({ id: s._id, name: s.full_name, class: s.class, school: schoolId });
   generateQRCode(document.getElementById('studentQRCode'), qrData, 160);
