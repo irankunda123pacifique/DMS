@@ -458,6 +458,7 @@ function avatarGrad(name) {
 }
 
 function openAddStudentModal() {
+  window._pendingStudentPhoto = null;
   const classes = DB.getClasses(schoolId);
   const sel = document.getElementById('sClass');
   sel.innerHTML = '<option value="">Select Class...</option>' +
@@ -484,23 +485,26 @@ async function saveStudent() {
     full_name: name,
     class: cls,
     gender,
-    discipline_marks: marks,
+    discipline_marks: isNaN(marks) ? 100 : marks,
     parent_name: pName,
     parent_phone: pPhone,
     profile_image: window._pendingStudentPhoto || null
   };
 
-  const newStudent = await DB.createStudent(data);
-
-  DB.pushUndo(`Student "${name}" added`, async () => {
-    await DB.deleteStudent(newStudent._id);
+  try {
+    const newStudent = await DB.createStudent(data);
+    window._pendingStudentPhoto = null;
+    DB.pushUndo(`Student "${name}" added`, async () => {
+      await DB.deleteStudent(newStudent._id || newStudent.id);
+      renderStudents();
+    });
+    DB.addLog(schoolId, `Student "${name}" added to ${cls}`, session.username, 'student').catch(() => {});
+    showToast('Student added successfully!', 'success');
+    closeModal('addStudentModal');
     renderStudents();
-  });
-
-  await DB.addLog(schoolId, `Student "${name}" added to ${cls}`, session.username, 'student');
-  showToast('Student added successfully!', 'success');
-  closeModal('addStudentModal');
-  renderStudents();
+  } catch (err) {
+    showToast('Failed to save student: ' + err.message, 'error');
+  }
 }
 
 function editStudent(id) {
@@ -529,14 +533,30 @@ async function updateStudent() {
   const pName = document.getElementById('editSParentName').value.trim();
   const pPhone = document.getElementById('editSParentPhone').value.trim();
 
-  const updates = { full_name: name, class: cls, gender, discipline_marks: marks, parent_name: pName, parent_phone: pPhone };
-  if (window._pendingStudentPhoto) updates.profile_image = window._pendingStudentPhoto;
+  if (!name || !cls) { showToast('Name and class are required.', 'warning'); return; }
 
-  await DB.updateStudent(id, updates);
-  await DB.addLog(schoolId, `Student "${name}" updated`, session.username, 'student');
-  showToast('Student updated!', 'success');
-  closeModal('editStudentModal');
-  renderStudents();
+  const updates = {
+    full_name: name,
+    class: cls,
+    gender,
+    discipline_marks: isNaN(marks) ? 100 : marks,
+    parent_name: pName,
+    parent_phone: pPhone
+  };
+  if (window._pendingStudentPhoto) {
+    updates.profile_image = window._pendingStudentPhoto;
+    window._pendingStudentPhoto = null;
+  }
+
+  try {
+    await DB.updateStudent(id, updates);
+    DB.addLog(schoolId, `Student "${name}" updated`, session.username, 'student').catch(() => {});
+    showToast('Student updated!', 'success');
+    closeModal('editStudentModal');
+    renderStudents();
+  } catch (err) {
+    showToast('Failed to update student: ' + err.message, 'error');
+  }
 }
 
 function viewStudent(id) {

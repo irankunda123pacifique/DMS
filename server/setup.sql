@@ -46,8 +46,7 @@ CREATE TABLE IF NOT EXISTS students (
     gender VARCHAR(20),
     parent_name VARCHAR(255),
     parent_phone VARCHAR(20),
-    profile_image TEXT,
-    discipline_marks INT DEFAULT 100,
+    profile_image MEDIUMTEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
 );
