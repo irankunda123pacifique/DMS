@@ -24,8 +24,20 @@ function handleStudentPhotoUpload(input, previewId) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = function (e) {
-    document.getElementById(previewId).innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
-    window._pendingStudentPhoto = e.target.result;
+    const img = new Image();
+    img.onload = function () {
+      const canvas = document.createElement('canvas');
+      const MAX = 400;
+      let w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+      else { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL('image/jpeg', 0.75);
+      document.getElementById(previewId).innerHTML = `<img src="${compressed}" style="width:100%;height:100%;object-fit:cover;">`;
+      window._pendingStudentPhoto = compressed;
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
